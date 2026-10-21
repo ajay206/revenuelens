@@ -65,7 +65,7 @@ if [[ "$REPORT_STATUS" != "200" ]]; then
   echo "/reports returned $REPORT_STATUS, expected 200."
   exit 1
 fi
-curl -s -b "$COOKIE_JAR" http://localhost:8000/reports | grep -q "CSV" || {
+grep -q "CSV" <<<"$(curl -s -b "$COOKIE_JAR" http://localhost:8000/reports)" || {
   echo "/reports endpoint does not contain expected CSV text."
   exit 1
 }
@@ -77,7 +77,7 @@ if [[ "$DOCS_STATUS" != "200" ]]; then
   echo "/docs returned $DOCS_STATUS, expected 200."
   exit 1
 fi
-curl -s -b "$COOKIE_JAR" "$DOCS_URL" | grep -q "NMB_MAX_699" || {
+grep -q "NMB_MAX_699" <<<"$(curl -s -b "$COOKIE_JAR" "$DOCS_URL")" || {
   echo "/docs endpoint does not contain expected NMB_MAX_699 text."
   exit 1
 }
