@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Leak Story – RevenueLens{% endblock %}
+{% block content %}
+    <h2>{{ story.title }}</h2>
+    <div class="big-number">{{ inr(story.money_impact) }}</div>
+
+    <div class="card"><strong>What:</strong> {{ story.what }}</div>
+    <div class="card"><strong>Since when:</strong> {{ story.since_when }}</div>
+    <div class="card"><strong>Root cause:</strong> {{ story.root_cause }}</div>
+    <div class="card"><strong>Who affected:</strong> {{ story.who_affected }}</div>
+    <div class="card"><strong>What to do:</strong> {{ story.what_to_do }}</div>
+
+    <div style="margin-top:1rem;">
+        <span class="badge {% if story.confidence == 'high' %}badge-high{% else %}badge-low{% endif %}">
+            {{ story.confidence }}
+        </span>
+    </div>
+
+    <h3 style="margin-top:2rem;">Sources</h3>
+    <ul>
+        {% for c in story.citations %}
+        <li>{{ c.type }}: {{ c.ref }}</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
+</arg_value>
