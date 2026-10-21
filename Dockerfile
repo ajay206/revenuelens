@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 # ---- create non‑root user ----
-RUN groupadd -r appuser && \\
+RUN groupadd -r appuser && \
     useradd -r -g appuser -d /app -s /usr/sbin/nologin appuser
 
 # ---- set workdir ----
