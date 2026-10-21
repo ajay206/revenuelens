@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Fix Approval Queue – RevenueLens{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Fix Approval Queue</h2>
+    <div class="tabs">
+        {% for s in statuses %}
+        <a href="?status={{ s }}" class="tab {% if s == current_status %}active{% endif %}">
+            {{ s|title }} {% if s == current_status %}({{ fixes|selectattr('status','equalto',s)|list|length }}){% endif %}
+        </a>
+        {% endfor %}
+        <a href="?status=" class="tab {% if current_status is none %}active{% endif %}">All</a>
+    </div>
+</div>
+
+{% if fixes %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Check</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Created By</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fix in fixes %}
+        <tr>
+            <td>{{ fix.title }}</td>
+            <td>{{ fix.check_name }}</td>
+            <td>{{ fix.customer_id or '—' }}</td>
+            <td>{{ inr(fix.amount) }}</td>
+            <td>
+                <span class="badge badge-{{ fix.status }}">
+                    {{ fix.status|title }}
+                </span>
+            </td>
+            <td>{{ fix.created_by }}</td>
+            <td>{{ fix.created_at[:16].replace('T', ' ') if fix.created_at else '—' }}</td>
+            <td>
+                {% if fix.status == 'draft' %}
+                <form method="post" action="/fixes/{{ fix.id }}/approve" style="display:inline;" onsubmit="return confirm('Approve this fix?');">
+                    <input type="text" name="note" placeholder="Optional note" style="width:120px;">
+                    <button type="submit" class="btn btn-primary btn-sm">Approve</button>
+                </form>
+                <form method="post" action="/fixes/{{ fix.id }}/reject" style="display:inline;" onsubmit="return confirm('Reject this fix?');">
+                    <input type="text" name="note" placeholder="Optional note" style="width:120px;">
+                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                </form>
+                {% else %}
+                <span class="text-muted">Decided by {{ fix.decided_by or '—' }}</span>
+                {% if fix.decision_note %}
+                <br><small>{{ fix.decision_note }}</small>
+                {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="card" style="text-align:center; padding:3rem;">
+    <p class="text-muted">No fixes found{% if current_status %} for status "{{ current_status }}"{% endif %}.</p>
+</div>
+{% endif %}
+{% endblock %}
