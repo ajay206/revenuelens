@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: revenuelens
+      POSTGRES_DB: revenuelens
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "revenuelens"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://revenuelens:${DB_PASSWORD}@db:5432/revenuelens
+      COMPANY_ID: ${COMPANY_ID:?}
+      COMPANY_NAME: ${COMPANY_NAME:?}
+      JWT_SECRET: ${JWT_SECRET:?}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+      - edge
+
+networks:
+  internal:
+    internal: true
+  edge:
+    driver: bridge
+
+volumes:
+  pgdata:
