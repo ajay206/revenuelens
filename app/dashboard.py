@@ -119,6 +119,10 @@ def inr(value: float) -> str:
     return f"₹{abs(value):,.2f}"
 
 
+templates.globals["inr"] = inr
+templates.globals["abs"] = abs
+
+
 # --------------------------------------------------------------------------- #
 # Auth helpers
 # --------------------------------------------------------------------------- #
@@ -156,8 +160,7 @@ def dashboard_user(request: Request) -> dict:
 
 
 def _is_html(request: Request) -> bool:
-    accept = request.headers.get("accept", "")
-    return "text/html" in accept
+    return not request.url.path.startswith("/api")
 
 
 # --------------------------------------------------------------------------- #

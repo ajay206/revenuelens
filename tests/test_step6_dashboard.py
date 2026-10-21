@@ -41,26 +41,8 @@ def sim_loaded(db_url):
 
 
 @pytest.fixture(scope="module")
-def seeded():
-    # creates admin admin@acme.test / s3cret-pass if needed
-    from app.db import company_conn
-    from app.security import hash_password
-
-    with company_conn() as conn, conn.cursor() as cur:
-        cur.execute(
-            "SELECT id FROM app_user WHERE email = %s AND tenant_id = 1",
-            ("admin@acme.test",),
-        )
-        if not cur.fetchone():
-            cur.execute(
-                "INSERT INTO app_user (tenant_id, email, password_hash, role) VALUES (%s, %s, %s, %s)",
-                (1, "admin@acme.test", hash_password("s3cret-pass"), "admin"),
-            )
-            conn.commit()
-
-
-@pytest.fixture(scope="module")
-def client(sim_loaded, seeded):
+def client(sim_loaded, request):
+    request.getfixturevalue("seeded")
     with TestClient(app) as c:
         yield c
 
