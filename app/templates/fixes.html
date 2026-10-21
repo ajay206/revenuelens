@@ -40,7 +40,7 @@
                 </span>
             </td>
             <td>{{ fix.created_by }}</td>
-            <td>{{ fix.created_at[:16].replace('T', ' ') if fix.created_at else '—' }}</td>
+            <td>{{ fix.created_at|string|truncate(16, True, '') if fix.created_at else '—' }}</td>
             <td>
                 {% if fix.status == 'draft' %}
                 <form method="post" action="/fixes/{{ fix.id }}/approve" style="display:inline;" onsubmit="return confirm('Approve this fix?');">

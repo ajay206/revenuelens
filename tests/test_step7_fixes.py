@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from uuid import UUID
 
 import psycopg
 import pytest
@@ -14,21 +13,26 @@ from app.main import app
 os.environ["RL_LLM"] = "fake"
 
 # Database URL for legacy simulation
-LEGACY_DATABASE_URL = os.environ.get("LEGACY_DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/legacydb")
-COMPANY_ID = os.environ.get("COMPANY_ID", "00000000-0000-0000-0000-000000000001")
+LEGACY_DATABASE_URL = os.environ.get("DATABASE_URL", "")
+COMPANY_ID = os.environ.get("COMPANY_ID", "11111111-1111-1111-1111-111111111111")
 
 
 @pytest.fixture(scope="module", autouse=True)
 def load_sim_data():
     """Load simulation data once per module."""
-    import subprocess
-    result = subprocess.run(
-        ["python", "-m", "legacy_sim.__main__", "load", "--database-url", LEGACY_DATABASE_URL],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        pytest.skip(f"Failed to load sim data: {result.stderr}")
+    if not LEGACY_DATABASE_URL:
+        pytest.skip("DATABASE_URL not set")
+    try:
+        psycopg.connect(LEGACY_DATABASE_URL).close()
+    except Exception:  # noqa: BLE001
+        pytest.skip("Database not available")
+    from legacy_sim.__main__ import main as sim_main
+
+    sim_main(["load", "--database-url", LEGACY_DATABASE_URL])
+    os.environ["LEGACY_DATABASE_URL"] = LEGACY_DATABASE_URL
+    from app.migrate import main as run_migrations
+
+    run_migrations()
 
     # Clear fix_draft table before tests (RLS FORCE applies, so set app.tenant_id)
     with psycopg.connect(LEGACY_DATABASE_URL) as conn:
@@ -54,8 +58,6 @@ def load_sim_data():
 @pytest.fixture
 def client(seeded):
     """Test client with seeded database."""
-    from app.dashboard import reset_cache
-    reset_cache()
     with TestClient(app) as c:
         yield c
 
@@ -63,10 +65,10 @@ def client(seeded):
 @pytest.fixture
 def auth_client(client: TestClient) -> TestClient:
     """Authenticated test client."""
-    resp = client.post("/login", data={"email": "admin@acme.test", "password": "s3cret-pass"})
+    resp = client.post("/login", data={"email": "admin@acme.test", "password": "s3cret-pass"},
+        follow_redirects=False,
+    )
     assert resp.status_code == 303
-    # Follow redirect to get cookie
-    client.cookies.update(resp.cookies)
     return client
 
 
@@ -212,32 +214,30 @@ def test_fixes_html_unauthenticated(client: TestClient):
 def test_audit_log_append_only():
     """audit_log is append-only for revenuelens_app user."""
     # Check current DB user
-    with psycopg.connect(LEGACY_DATABASE_URL) as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT current_user")
-            current_user = cur.fetchone()[0]
+    with psycopg.connect(LEGACY_DATABASE_URL) as conn, conn.cursor() as cur:
+        cur.execute("SELECT current_user")
+        current_user = cur.fetchone()[0]
 
     if current_user != "revenuelens_app":
         pytest.skip(f"Test only runs as revenuelens_app, current user: {current_user}")
 
     # Try to UPDATE audit_log as revenuelens_app - should fail
-    with psycopg.connect(LEGACY_DATABASE_URL) as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT set_config('app.tenant_id', %s, false)", (COMPANY_ID,))
-            # Insert a test row first
-            cur.execute("""
+    with psycopg.connect(LEGACY_DATABASE_URL) as conn, conn.cursor() as cur:
+        cur.execute("SELECT set_config('app.tenant_id', %s, false)", (COMPANY_ID,))
+        # Insert a test row first
+        cur.execute("""
                 INSERT INTO audit_log (tenant_id, actor, action, target, details)
                 VALUES (%s, 'test', 'test_action', 'test_target', '{}')
                 RETURNING id
             """, (COMPANY_ID,))
-            test_id = cur.fetchone()[0]
-            conn.commit()
+        test_id = cur.fetchone()[0]
+        conn.commit()
 
-            # Now try to update it
-            with pytest.raises(InsufficientPrivilege):
-                cur.execute("UPDATE audit_log SET action = 'hacked' WHERE id = %s", (test_id,))
-            conn.rollback()
+        # Now try to update it
+        with pytest.raises(InsufficientPrivilege):
+            cur.execute("UPDATE audit_log SET action = 'hacked' WHERE id = %s", (test_id,))
+        conn.rollback()
 
-            # Cleanup
-            cur.execute("DELETE FROM audit_log WHERE id = %s", (test_id,))
-            conn.commit()
+        # Cleanup
+        cur.execute("DELETE FROM audit_log WHERE id = %s", (test_id,))
+        conn.commit()

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -47,7 +46,7 @@ def draft_fix(conn: Connection, tenant_id: str, finding: Finding, story: Story, 
     payload = {
         "record_ids": finding.record_ids,
         "table": finding.table,
-        "citations": [{"type": c.type, "ref": c.ref} for c in story.citations],
+        "citations": [dict(c) for c in story.citations],
     }
     proposed = PROPOSED_ACTIONS.get(finding.check, "review and apply appropriate correction")
 

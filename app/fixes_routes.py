@@ -2,28 +2,24 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 from .dashboard import (
     dashboard_user,
+    get_settings,
     load_findings,
     load_stories,
     render_template,
-    get_settings,
 )
 from .db import company_conn
 from .fixes import (
-    PROPOSED_ACTIONS,
     decide_fix,
     draft_fix,
-    get_fix,
     list_audit,
     list_fixes,
-    log,
 )
-from .reconcile import Finding
 
 router = APIRouter()
 
@@ -207,7 +203,7 @@ def create_draft_api(request: Request, payload: DraftRequest):
 @router.get("/api/fixes", response_model=FixListResponse)
 def list_fixes_api(request: Request, status: str | None = None):
     """List fix drafts via JSON API."""
-    actor = _get_actor(request)
+    _get_actor(request)
 
     with company_conn() as conn:
         fixes = list_fixes(conn, status)
@@ -232,7 +228,7 @@ def decide_fix_api(request: Request, fix_id: UUID, payload: DecisionRequest):
 @router.get("/api/audit", response_model=AuditResponse)
 def audit_log_api(request: Request, limit: int = 200):
     """Get audit log via JSON API."""
-    actor = _get_actor(request)
+    _get_actor(request)
 
     with company_conn() as conn:
         entries = list_audit(conn, limit)

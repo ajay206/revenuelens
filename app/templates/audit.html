@@ -19,7 +19,7 @@
     <tbody>
         {% for entry in entries %}
         <tr>
-            <td>{{ entry.created_at[:19].replace('T', ' ') if entry.created_at else '—' }}</td>
+            <td>{{ entry.created_at|string|truncate(19, True, '') if entry.created_at else '—' }}</td>
             <td>{{ entry.actor }}</td>
             <td><code>{{ entry.action }}</code></td>
             <td>{{ entry.target or '—' }}</td>
