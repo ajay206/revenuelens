@@ -29,14 +29,17 @@ for cmd in openssl python3; do
     fi
 done
 
-# If we are going to bring up containers, ensure docker/compose are present
+# If we are going to bring up containers, ensure docker is present and compose works
 if [[ "${SKIP_UP:-0}" != "1" ]]; then
-    for cmd in docker compose; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            echo "Error: $cmd is required but not installed." >&2
-            exit 1
-        fi
-    done
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Error: docker is required but not installed." >&2
+        exit 1
+    fi
+    # docker compose is a subcommand; verify it works
+    if ! docker compose version >/dev/null 2>&1; then
+        echo "Error: docker compose is required but not installed." >&2
+        exit 1
+    fi
 fi
 
 # Paths
