@@ -2,14 +2,14 @@
 
 Mimics the :class:`~app.adapters.postgres_readonly.ReadOnlyAdapter` interface so
 that :func:`app.discovery.discover`, :func:`app.mapping.map_schema` and
-:func:`app.reconcile.run_checks` work unchanged against a directory of CSV files
-produced by ``python -m legacy_sim generate --out DIR``.
+:function:`app.reconcile.run_checks` work unchanged against a directory of CSV
+files produced by ``python -m legacy_sim generate --out DIR``.
 """
 
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+from collections.abc import Iterable
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Self
@@ -26,14 +26,14 @@ class CsvExportAdapter:
         self.schema = schema
         self.conn = duckdb.connect()
         # Ensure the target schema exists.
-        self.conn.execute("CREATE SCHEMA IF NOT EXISTS {}".format(schema))
+        self.conn.execute(f"CREATE SCHEMA IF NOT EXISTS {schema}")
         # Load every CSV file into a table named after its (lowercased) stem.
         for csv_path in sorted(Path(self.dir_path).glob("*.csv")):
             table = csv_path.stem.lower()
             full_path = str(csv_path)
             self.conn.execute(
-                "CREATE TABLE {}.\"{}\" AS "
-                "SELECT * FROM read_csv_auto(?, header=true)".format(schema, table),
+                f"CREATE TABLE {schema}.\"{table}\" AS "
+                "SELECT * FROM read_csv_auto(?, header=true)",
                 [full_path],
             )
 
@@ -42,7 +42,7 @@ class CsvExportAdapter:
     # ------------------------------------------------------------------ #
     def _table_fqn(self, table: str) -> str:
         """Return a fully-qualified quoted table identifier."""
-        return "{}.\"{}\"".format(self.schema, table)
+        return f"{self.schema}.\"{table}\""
 
     @staticmethod
     def _map_type(duck_type: str) -> str:
@@ -75,7 +75,6 @@ class CsvExportAdapter:
             "ORDER BY table_name",
             [self.schema],
         ).fetchall()
-        self.conn.rollback()
         return [r[0] for r in rows]
 
     def columns(self, table: str) -> list[tuple[str, str]]:
@@ -86,35 +85,35 @@ class CsvExportAdapter:
             "ORDER BY ordinal_position",
             [self.schema, table],
         ).fetchall()
-        self.conn.rollback()
         return [(r[0], self._map_type(r[1])) for r in rows]
 
     def row_count(self, table: str) -> int:
         """Return row count for a table."""
         row = self.conn.execute(
-            "SELECT COUNT(*) FROM {}".format(self._table_fqn(table))
+            f"SELECT COUNT(*) FROM {self._table_fqn(table)}"
         ).fetchone()
-        self.conn.rollback()
         return int(row[0]) if row else 0
 
     def sample(self, table: str, n: int = 5) -> list[dict]:
         """Return up to *n* sample rows from a table."""
-        rows = self.conn.execute(
-            "SELECT * FROM {} LIMIT ?".format(self._table_fqn(table)), [n]
-        ).fetchdf()
-        self.conn.rollback()
-        return self._to_dicts(rows)
+        cur = self.conn.execute(
+            f"SELECT * FROM {self._table_fqn(table)} LIMIT ?", [n]
+        )
+        rows = cur.fetchall()
+        cols = [desc[0] for desc in cur.description]
+        return self._to_dicts(rows, cols)
 
     def fetch_all(self, table: str, columns: list[str] | None = None) -> list[dict]:
         """Return all rows from a table, optionally selecting specific columns."""
         if columns:
-            cols = ", ".join('"{}"'.format(c) for c in columns)
-            sql = "SELECT {} FROM {}".format(cols, self._table_fqn(table))
+            cols = ", ".join(f'"{c}"' for c in columns)
+            sql = f"SELECT {cols} FROM {self._table_fqn(table)}"
         else:
-            sql = "SELECT * FROM {}".format(self._table_fqn(table))
-        rows = self.conn.execute(sql).fetchdf()
-        self.conn.rollback()
-        return self._to_dicts(rows)
+            sql = f"SELECT * FROM {self._table_fqn(table)}"
+        cur = self.conn.execute(sql)
+        rows = cur.fetchall()
+        col_names = [desc[0] for desc in cur.description]
+        return self._to_dicts(rows, col_names)
 
     def query(self, sql: str | Composable, params: tuple | list | None = None) -> list[dict]:
         """Execute a ``SELECT``/``WITH`` query and return rows as list of dicts."""
@@ -123,9 +122,10 @@ class CsvExportAdapter:
         if not stripped.startswith(("select", "with")):
             raise ValueError("Only SELECT or WITH queries are allowed")
         params_list = list(params) if params is not None else []
-        rows = self.conn.execute(text, params_list).fetchdf()
-        self.conn.rollback()
-        return self._to_dicts(rows)
+        cur = self.conn.execute(text, params_list)
+        rows = cur.fetchall()
+        col_names = [desc[0] for desc in cur.description]
+        return self._to_dicts(rows, col_names)
 
     def close(self) -> None:
         """Close the underlying DuckDB connection."""
@@ -137,35 +137,29 @@ class CsvExportAdapter:
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         self.close()
 
     # ------------------------------------------------------------------ #
     # Internal conversion helpers
     # ------------------------------------------------------------------ #
-    def _to_dicts(self, df: Any) -> list[dict]:
-        """Convert a DuckDB DataFrame result into a list of typed dicts."""
-        if df is None or len(df) == 0:
-            return []
+    def _to_dicts(self, rows: Iterable[tuple], columns: list[str]) -> list[dict]:
+        """Convert raw rows and column names into typed dicts."""
         records: list[dict] = []
-        columns_iter = df.columns
-        for _, row in df.iterrows():
+        for row in rows:
             record: dict[str, Any] = {}
-            for col in columns_iter:
-                value = row[col]
+            for col, value in zip(columns, row):
                 record[col] = self._convert_value(value)
             records.append(record)
         return records
 
     def _convert_value(self, value: Any) -> Any:
-        """Convert a single Python value extracted from a DuckDB DataFrame."""
+        """Convert a single Python value extracted from a DuckDB result."""
         if value is None:
             return None
         # Decimal handling – mimic psycopg rounding to 4 decimal places.
         if isinstance(value, Decimal):
             return Decimal(str(round(float(value), 4)))
-        # Float -> numeric column values become Decimal via Decimal(str(round(...)))
         if isinstance(value, float):
             return Decimal(str(round(value, 4)))
-        # Dates/timestamps already come back nicely typed by DuckDB
         return value

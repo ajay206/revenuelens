@@ -19,7 +19,7 @@ from typing import Any
 from app.adapters import open_source
 from app.discovery import discover
 from app.explain import match_tickets  # noqa: F401  (re-exported conceptually)
-from app.knowledge import as_tickets, load_all
+from app.knowledge import load_all
 from app.mapping import map_schema
 from app.reconcile import run_checks
 

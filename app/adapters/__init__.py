@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Union
-
 from .csv_export import CsvExportAdapter
 from .postgres_readonly import ReadOnlyAdapter
 
-Adapter = Union[ReadOnlyAdapter, CsvExportAdapter]
+Adapter = ReadOnlyAdapter | CsvExportAdapter
 
 
 def open_source(kind: str, target: str, schema: str = "nimbus") -> Adapter:
@@ -20,7 +18,7 @@ def open_source(kind: str, target: str, schema: str = "nimbus") -> Adapter:
         return ReadOnlyAdapter(target, schema)
     if kind == "csv":
         return CsvExportAdapter(target, schema)
-    raise ValueError("Unknown adapter kind: {!r}".format(kind))
+    raise ValueError(f"Unknown adapter kind: {kind!r}")
 
 
-__all__ = ["ReadOnlyAdapter", "CsvExportAdapter", "open_source", "Adapter"]
+__all__ = ["Adapter", "CsvExportAdapter", "ReadOnlyAdapter", "open_source"]

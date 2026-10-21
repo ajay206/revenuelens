@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +18,7 @@ from typing import Any
 class KnowledgeItem:
     """A single knowledge item extracted from an external source."""
 
-    source: "jira" | "ado" | "confluence"
+    source: str  # "jira" | "ado" | "confluence"
     key: str
     title: str
     body: str
@@ -34,7 +34,7 @@ class JiraConnector:
         self._items = items
 
     @classmethod
-    def from_export(cls, tickets_json_path: str | os.PathLike[str]) -> "JiraConnector":
+    def from_export(cls, tickets_json_path: str | os.PathLike[str]) -> JiraConnector:
         path = Path(tickets_json_path)
         items: list[KnowledgeItem] = []
         if path.exists():
@@ -70,9 +70,8 @@ class JiraConnector:
             )
             if not match:
                 continue
-            if labels:
-                if not any(label.lower() in [l.lower() for l in item.labels] for label in labels):
-                    continue
+            if labels and not any(label.lower() in [l.lower() for l in item.labels] for label in labels):
+                continue
             result.append(item)
         return result
 
@@ -84,7 +83,7 @@ class AdoConnector:
         self._items = items
 
     @classmethod
-    def from_export(cls, tickets_json_path: str | os.PathLike[str]) -> "AdoConnector":
+    def from_export(cls, tickets_json_path: str | os.PathLike[str]) -> AdoConnector:
         path = Path(tickets_json_path)
         items: list[KnowledgeItem] = []
         if path.exists():
@@ -122,9 +121,8 @@ class AdoConnector:
             )
             if not match:
                 continue
-            if labels:
-                if not any(label.lower() in [l.lower() for l in item.labels] for label in labels):
-                    continue
+            if labels and not any(label.lower() in [l.lower() for l in item.labels] for label in labels):
+                continue
             result.append(item)
         return result
 
@@ -136,7 +134,7 @@ class ConfluenceConnector:
         self._items = items
 
     @classmethod
-    def from_export(cls, pages_dir: str | os.PathLike[str]) -> "ConfluenceConnector":
+    def from_export(cls, pages_dir: str | os.PathLike[str]) -> ConfluenceConnector:
         root = Path(pages_dir)
         items: list[KnowledgeItem] = []
         if root.exists():
@@ -151,7 +149,7 @@ class ConfluenceConnector:
                         body=content,
                         created="",
                         labels=[],
-                        url="https://confluence.example.invalid/pages/{}".format(md_path.stem),
+                        url=f"https://confluence.example.invalid/pages/{md_path.stem}",
                     )
                 )
         return cls(items)
@@ -178,9 +176,8 @@ class ConfluenceConnector:
             )
             if not match:
                 continue
-            if labels:
-                if not any(label.lower() in [l.lower() for l in item.labels] for label in labels):
-                    continue
+            if labels and not any(label.lower() in [l.lower() for l in item.labels] for label in labels):
+                continue
             result.append(item)
         return result
 

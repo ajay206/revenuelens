@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import json
 import os
 import socket
 
 import pytest
 
-from app.adapters import CsvExportAdapter, open_source
+import legacy_sim.__main__ as legacy_main
+import legacy_sim.generator as gen
+from app.adapters import CsvExportAdapter
+from app.discovery import discover
+from app.evaluate import score
 from app.explain import match_tickets
 from app.knowledge import (
     AdoConnector,
@@ -17,11 +20,8 @@ from app.knowledge import (
     as_tickets,
     load_all,
 )
+from app.mapping import map_schema
 from app.reconcile import run_checks
-from app.evaluate import score
-
-import legacy_sim.__main__ as legacy_main
-import legacy_sim.generator as gen
 
 
 # --------------------------------------------------------------------------- #
@@ -61,9 +61,8 @@ def test_csv_adapter_row_count(csv_export_dir: str) -> None:
 
 
 def test_csv_adapter_query_rejects_non_select(csv_export_dir: str) -> None:
-    with CsvExportAdapter(csv_export_dir) as adapter:
-        with pytest.raises(ValueError):
-            adapter.query("DELETE FROM nimbus.cust_mstr")
+    with CsvExportAdapter(csv_export_dir) as adapter, pytest.raises(ValueError):
+        adapter.query("DELETE FROM nimbus.cust_mstr")
 
 
 # --------------------------------------------------------------------------- #
@@ -117,7 +116,7 @@ def test_load_all_returns_items(csv_export_dir: str) -> None:
 # Explain / match_tickets test
 # --------------------------------------------------------------------------- #
 def test_match_tickets_for_expired_discount(tickets_path: str) -> None:
-    from app.types import Finding  # local import to avoid circular dependency
+    from app.reconcile import Finding  # local import to avoid circular dependency
 
     finding = Finding(
         check="expired_discount",
@@ -140,8 +139,7 @@ def test_match_tickets_for_expired_discount(tickets_path: str) -> None:
 def test_run_checks_scores(csv_export_dir: str) -> None:
     ground_truth = gen.generate(seed=42, n_customers=500).ground_truth
     with CsvExportAdapter(csv_export_dir, schema="nimbus") as adapter:
-        tables = [t for t in adapter.list_tables()]
-        findings = run_checks(adapter, tables)
+        findings = run_checks(adapter, map_schema(discover(adapter)))
         result = score(findings, ground_truth)
         per_check = result["per_check"]
         for check in per_check:
@@ -158,7 +156,7 @@ def _postgres_available(url: str) -> bool:
         port = int(url.split("@")[-1].split("/")[0].split(":")[1])
         socket.create_connection((host_part, port), timeout=2)
         return True
-    except Exception:
+    except Exception:  # noqa: BLE001
         return False
 
 
@@ -170,13 +168,11 @@ def test_csv_matches_postgres_findings(csv_export_dir: str) -> None:
     legacy_main.main(["load", "--database-url", url])
 
     with CsvExportAdapter(csv_export_dir) as csv_adapter:
-        csv_tables = csv_adapter.list_tables()
-        csv_findings = run_checks(csv_adapter, csv_tables)
+        csv_findings = run_checks(csv_adapter, map_schema(discover(csv_adapter)))
 
     from app.adapters.postgres_readonly import ReadOnlyAdapter
     with ReadOnlyAdapter(url, schema="nimbus") as pg_adapter:
-        pg_tables = pg_adapter.list_tables()
-        pg_findings = run_checks(pg_adapter, pg_tables)
+        pg_findings = run_checks(pg_adapter, map_schema(discover(pg_adapter)))
 
     def findings_key(findings: list) -> set:
         return {(f.check, tuple(f.record_ids)) for f in findings}
