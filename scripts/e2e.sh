@@ -98,6 +98,19 @@ for slug in acme beta; do
     fi
     echo "✅ Auth works for ${slug}"
 
+    if [[ "$slug" == "acme" ]]; then
+        jar=$(mktemp)
+        code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${API_PORT}/")
+        [[ "$code" == "303" ]] || { echo "❌ Dashboard without login returned $code"; exit 1; }
+        curl -fsS -c "$jar" -o /dev/null --data-urlencode "email=${ADMIN_EMAIL}" \
+            --data-urlencode "password=${ADMIN_PASSWORD}" "http://127.0.0.1:${API_PORT}/login"
+        page=$(curl -fsS -b "$jar" "http://127.0.0.1:${API_PORT}/")
+        grep -q "leaking this month" <<<"$page" || { echo "❌ Dashboard did not render"; exit 1; }
+        curl -fsS -b "$jar" "http://127.0.0.1:${API_PORT}/leaks/0" | grep -q "Sources" \
+            || { echo "❌ Story page did not render"; exit 1; }
+        echo "✅ Dashboard loads for acme"
+    fi
+
     # Store token for later cross‑company checks
     if [[ "$slug" == "acme" ]]; then
         ACME_TOKEN=$token
