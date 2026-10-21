@@ -1,42 +1,51 @@
 {% extends "base.html" %}
 {% block title %}Audit Log – RevenueLens{% endblock %}
+{% block breadcrumbs %}
+<a href="/">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">Audit</span>
+{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block page_subtitle %}Every action, who did it, and when.{% endblock %}
+{% block page_actions %}{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h2>Audit Log</h2>
-</div>
-
 {% if entries %}
-<table class="data-table">
+<div class="table-wrap is-loading">
+  <table class="data-table" data-enhance data-page-size="10" data-filter-col="2">
     <thead>
-        <tr>
-            <th>Time</th>
-            <th>Actor</th>
-            <th>Action</th>
-            <th>Target</th>
-            <th>Details</th>
-        </tr>
+      <tr>
+        <th data-sort="text"><button>Time</button></th>
+        <th data-sort="text"><button>Actor</button></th>
+        <th data-sort="text"><button>Action</button></th>
+        <th data-sort="text"><button>Target</button></th>
+        <th>Details</th>
+      </tr>
     </thead>
     <tbody>
-        {% for entry in entries %}
-        <tr>
-            <td>{{ entry.created_at|string|truncate(19, True, '') if entry.created_at else '—' }}</td>
-            <td>{{ entry.actor }}</td>
-            <td><code>{{ entry.action }}</code></td>
-            <td>{{ entry.target or '—' }}</td>
-            <td>
-                {% if entry.details %}
-                <pre class="json-preview">{{ entry.details | tojson(indent=2) }}</pre>
-                {% else %}
-                <span class="text-muted">—</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
+      {% for entry in entries %}
+      <tr>
+        <td>{{ entry.created_at|string|truncate(19, True, '') if entry.created_at else '—' }}</td>
+        <td>{{ entry.actor }}</td>
+        <td><span class="chip"><code>{{ entry.action }}</code></span></td>
+        <td>{{ entry.target or '—' }}</td>
+        <td>
+          {% if entry.details %}
+          <details>
+            <summary>View</summary>
+            <pre>{{ entry.details | tojson(indent=2) }}</pre>
+          </details>
+          {% else %}
+          <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
     </tbody>
-</table>
+  </table>
+</div>
 {% else %}
-<div class="card" style="text-align:center; padding:3rem;">
-    <p class="text-muted">No audit entries yet.</p>
+<div class="empty-state">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+  <h3>No audit entries yet.</h3>
+  <p>When actions are recorded, they will appear here.</p>
 </div>
 {% endif %}
 {% endblock %}

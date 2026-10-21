@@ -1,41 +1,194 @@
 {% extends "base.html" %}
+
 {% block title %}RevenueLens – Dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Dashboard</span>
+</nav>
+{% endblock %}
+
+{% block page_title %}Revenue leak overview{% endblock %}
+
+{% block page_subtitle %}
+Latest month: {{ period_label(totals.latest_period) }}
+{% endblock %}
+
+{% block page_actions %}
+<a href="/reports" class="btn btn-primary">Download report</a>
+<a href="/fixes" class="btn btn-secondary">View fixes</a>
+{% endblock %}
+
+{% macro compact(v) %}
+    {% set abs_v = v|abs %}
+    {% if abs_v >= 1e7 %}
+        {{ "₹" ~ (abs_v/1e7)|round(1) ~ "Cr" }}
+    {% elif abs_v >= 1e5 %}
+        {{ "₹" ~ (abs_v/1e5)|round(1) ~ "L" }}
+    {% elif abs_v >= 1e3 %}
+        {{ "₹" ~ (abs_v/1e3)|round(0) ~ "K" }}
+    {% else %}
+        {{ "₹" ~ (abs_v)|int }}
+    {% endif %}
+{% endmacro %}
+
 {% block content %}
-    <div class="big-number">{{ inr(totals.month_total) }} leaking this month</div>
-    <div class="subtitle">{{ inr(totals.found_total) }} found so far · {{ totals.count }} leaks detected</div>
+<div class="kpi-grid">
+    <div class="kpi card">
+        <div class="kpi-label">Leaking this month</div>
+        <div class="kpi-value money">{{ inr_in(totals.month_total) }}</div>
+        <div class="kpi-sub text-muted">in {{ period_label(totals.latest_period) }}</div>
+    </div>
+    <div class="kpi card">
+        <div class="kpi-label">Found so far</div>
+        <div class="kpi-value money" title="{{ inr(totals.found_total) }}">{{ inr_in(totals.found_total) }}</div>
+        <div class="kpi-sub text-muted">{{ totals.count }} leaks found</div>
+    </div>
+    <div class="kpi card">
+        <div class="kpi-label">Recovered</div>
+        <div class="kpi-value money">{{ inr_in(fixes.recovered) }}</div>
+        <div class="kpi-sub text-muted">{{ fixes.approved }} fixes approved</div>
+    </div>
+    <div class="kpi card">
+        <div class="kpi-label">Open fixes</div>
+        <div class="kpi-value">{{ fixes.open }}</div>
+        <div class="kpi-sub text-muted">waiting for approval</div>
+    </div>
+</div>
 
-    <form method="get" action="/" style="margin-bottom:1rem;">
-        <label for="type">Filter by leak type:</label>
-        <select id="type" name="type" class="filter" onchange="this.form.submit()">
-            <option value="">All</option>
-            {% for t in types %}
-            <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+<div class="grid-2" style="gap:24px; margin-top:24px;">
+    <!-- Money found by month -->
+    <div class="card">
+        <div class="card-title">Money found by month</div>
+        {% if trend %}
+        {% set max_amount = trend|map(attribute='amount')|max %}
+        {% set nice_max = (max_amount * 1.1) | round(0, 'ceil') %}
+        <svg viewBox="0 0 720 320"
+             style="width:100%;height:auto;max-height:340px"
+             role="img"
+             aria-label="Monthly revenue leak bar chart">
+            <style>
+                .axis{stroke:var(--border);stroke-width:1}
+                .grid{stroke:var(--border);stroke-width:0.5;opacity:0.5}
+                .bar{fill:var(--accent);rx:6}
+                .label{font-family:Inter,system-ui,sans-serif;font-size:14px;fill:var(--text)}
+                .axis-label{fill:var(--text-2)}
+            </style>
+            <!-- Y‑axis grid & labels -->
+            {% set chart_h = 240 %}
+            {% set chart_y = 32 %}
+            {% set chart_x = 96 %}
+            {% for i in range(0,5) %}
+                {% set y = chart_y + chart_h - (i * chart_h/4) %}
+                <line x1="{{ chart_x }}" y1="{{ y }}" x2="{{ chart_x + 600 }}" y2="{{ y }}" class="grid"/>
+                <text x="{{ chart_x - 4 }}" y="{{ y + 5 }}" class="axis-label" text-anchor="end">
+                    {{ compact((nice_max/4) * i) }}
+                </text>
             {% endfor %}
-        </select>
-    </form>
+            <!-- Bars -->
+            {% set slot_width = 600 / trend|length %}
+            {% set bar_width = [slot_width * 0.8, 80]|min %}
+            {% for point in trend %}
+                {% set idx = loop.index0 %}
+                {% set x_center = chart_x + slot_width * idx + slot_width/2 %}
+                {% set bar_h = (point.amount / nice_max) * chart_h %}
+                {% set y_top = chart_y + chart_h - bar_h %}
+                <rect x="{{ x_center - bar_width/2 }}" y="{{ y_top }}" width="{{ bar_width }}" height="{{ bar_h }}" class="bar">
+                    <title>{{ inr_in(point.amount) }}</title>
+                </rect>
+                <text x="{{ x_center }}" y="{{ y_top - 6 }}" class="label" text-anchor="middle">{{ compact(point.amount) }}</text>
+                <text x="{{ x_center }}" y="{{ chart_y + chart_h + 30 }}" class="label" text-anchor="middle">{{ point.label }}</text>
+            {% endfor %}
+        </svg>
+        {% else %}
+        <div class="empty-state">
+            <svg width="48" height="48" fill="var(--text-2)" aria-hidden="true"><use href="#icon-empty"/></svg>
+            <h2>No data available</h2>
+            <p>There is no leakage data to display yet.</p>
+        </div>
+        {% endif %}
+    </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Type</th>
-                <th>Customer</th>
-                <th>Money</th>
-                <th>Title</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for f in findings %}
-            <tr>
-                <td><a href="/leaks/{{ loop.index0 }}" class="leak-link">{{ loop.index0 }}</a></td>
-                <td>{{ f.check }}</td>
-                <td>{{ f.customer_id or "—" }}</td>
-                <td>{{ inr(abs(f.impact)) }}</td>
-                <td>{{ f.description }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5">No leaks found.</td></tr>
+    <!-- Leaks by type -->
+    <div class="card">
+        <div class="card-title">Leaks by type</div>
+        {% if breakdown %}
+        <div class="leaks-by-type">
+            {% for b in breakdown %}
+            <div class="leak-type-row" style="display:grid;grid-template-columns:150px auto 80px;align-items:center;margin-bottom:12px;">
+                <div class="type-label" style="font-size:15px;color:var(--text);">{{ b.label }}</div>
+                <div class="type-count" style="font-size:15px;color:var(--text);">{{ b.count }} leaks</div>
+                <div class="type-bar-track" style="background:var(--accent-soft);height:10px;border-radius:999px;position:relative;">
+                    <div class="type-bar-fill" style="background:var(--accent);height:10px;border-radius:999px;width:{{ (b.amount|abs / max_amount * 100) if max_amount else 0 }}%;"></div>
+                </div>
+                <div class="type-amount" style="font-weight:bold;text-align:right;color:var(--text);">{{ inr_in(b.amount) }}</div>
+            </div>
             {% endfor %}
-        </tbody>
-    </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg width="48" height="48" fill="var(--text-2)" aria-hidden="true"><use href="#icon-empty"/></svg>
+            <h2>No leaks by type</h2>
+            <p>Filters returned no results.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Top leaks -->
+    <div class="card">
+        <div class="card-title">
+            Top leaks
+            <form method="get" action="/" style="float:right; margin:0;">
+                <label for="type-select" class="sr-only">Filter by leak type</label>
+                <select id="type-select" name="type" class="btn btn-sm" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    {% for t in types %}
+                    <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        {% if findings %}
+        <div class="table-wrap is-loading">
+            <table class="data-table" data-enhance data-filter-col="1" data-page-size="10">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th data-sort="text">Type</th>
+                        <th data-sort="text">Customer</th>
+                        <th data-sort="text">Month</th>
+                        <th data-sort="num">Money</th>
+                        <th>Severity</th>
+                        <th>What happened</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for idx, f in findings_index %}
+                    <tr>
+                        <td><a href="/leaks/{{ idx }}" class="leak-link">{{ idx }}</a></td>
+                        <td>{{ f.check }}</td>
+                        <td>{{ f.customer_id or "—" }}</td>
+                        <td>{{ period_label(f.period) }}</td>
+                        <td class="money" data-value="{{ f.impact|abs }}">{{ inr_in(f.impact) }}</td>
+                        <td>
+                            {% set sev = severity(f.impact) %}
+                            <span class="badge badge-{{ sev }}">{{ sev|capitalize }}</span>
+                        </td>
+                        <td>{{ f.description }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <svg width="48" height="48" fill="var(--text-2)" aria-hidden="true"><use href="#icon-empty"/></svg>
+            <h2>No leaks found</h2>
+            <p>Try adjusting the filter or check back later.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
