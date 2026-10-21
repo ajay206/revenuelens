@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}RevenueLens – Reports{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Reports</h1>
+    <p>Download findings as CSV or PDF.</p>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <h3>Findings CSV</h3>
+        <p>All findings with full detail columns.</p>
+        <a href="/api/reports/findings.csv" class="btn">Download CSV</a>
+    </div>
+    <div class="card">
+        <h3>Findings PDF</h3>
+        <p>Summary report with top 200 findings table.</p>
+        <a href="/api/reports/findings.pdf" class="btn">Download PDF</a>
+    </div>
+</div>
+{% endblock %}
