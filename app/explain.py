@@ -15,6 +15,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from app.adapters.postgres_readonly import ReadOnlyAdapter
 from app.discovery import discover
 from app.llm import LLM, free_llm_from_env, parse_json
 from app.mapping import map_schema
@@ -250,9 +251,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     # 1️⃣ Discover schema & run checks
-    with discover(args.database_url, args.schema) as adapter:  # type: ignore[arg-type]
-        # The discover helper returns a ReadOnlyAdapter – we reuse it here.
-        mapping = map_schema(adapter.discover_schema())  # type: ignore[attr-defined]
+    with ReadOnlyAdapter(args.database_url, args.schema) as adapter:
+        mapping = map_schema(discover(adapter))
         findings = run_checks(adapter, mapping)
 
     # 2️⃣ Load tickets & LLM
