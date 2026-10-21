@@ -12,6 +12,7 @@ dependencies = [
     "PyJWT",
     "jinja2",
     "python-multipart",
+    "duckdb",
 ]
 
 [project.optional-dependencies]
