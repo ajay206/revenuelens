@@ -13,8 +13,8 @@ cleanup() {
                 docker compose -p "rl-${slug}" --env-file "$env_file" logs --no-color --tail 100 || true
                 echo "=== End logs for ${slug} ==="
             fi
-            # Bring the stack down, ignore errors
-            docker compose -p "rl-${slug}" --env-file "$env_file" down -v || true
+            # Bring the stack down, ignore errors (include legacy-sim profile)
+            docker compose -p "rl-${slug}" --env-file "$env_file" --profile legacy-sim down -v || true
         fi
     done
     exit $exit_code
@@ -56,6 +56,27 @@ for slug in acme beta; do
         sleep $interval
         ((elapsed+=interval))
     done
+
+    # ------------------------------------------------------------
+    # Optional legacy billing simulator for Acme
+    # ------------------------------------------------------------
+    if [[ "$slug" == "acme" ]]; then
+        echo "🚀 Loading legacy billing simulator for acme..."
+        docker compose -p rl-acme --env-file deployments/acme/.env --profile legacy-sim run --rm legacy-sim
+        if [[ $? -ne 0 ]]; then
+            echo "❌ Legacy simulator failed to load for acme"
+            exit 1
+        fi
+        echo "✅ Legacy simulator loaded for acme"
+
+        # Assert row count in legacy-db
+        ROW_COUNT=$(docker compose -p rl-acme --env-file deployments/acme/.env --profile legacy-sim exec -T legacy-db psql -U nimbus -d nimbus -tAc "select count(*) from nimbus.cust_mstr")
+        if [[ "$ROW_COUNT" != "500" ]]; then
+            echo "❌ Expected 500 rows in nimbus.cust_mstr, got ${ROW_COUNT}"
+            exit 1
+        fi
+        echo "✅ Legacy DB contains expected 500 rows"
+    fi
 
     # Login and obtain token
     token=$(curl -fsS -X POST "http://127.0.0.1:${API_PORT}/auth/login" \

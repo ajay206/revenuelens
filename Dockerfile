@@ -11,6 +11,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY app/ ./app/
 COPY migrations/ ./migrations/
+COPY legacy_sim/ ./legacy_sim/
 
 # ---- install the package (editable not needed) ----
 RUN pip install --no-cache-dir .
