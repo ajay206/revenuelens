@@ -255,6 +255,7 @@ def leak_story(request: Request, leak_id: int):
         user=user,
         finding=finding,
         story=story,
+        leak_id=leak_id,
         company_name=settings.company_name,
     )
 

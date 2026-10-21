@@ -22,4 +22,10 @@
         <li>{{ c.type }}: {{ c.ref }}</li>
         {% endfor %}
     </ul>
+
+    <hr style="margin: 2rem 0;">
+
+    <form method="post" action="/leaks/{{ leak_id }}/draft" style="display:inline;">
+        <button type="submit" class="btn btn-primary">Draft a fix</button>
+    </form>
 {% endblock %}
