@@ -1,13 +1,12 @@
 import os
-from unittest.mock import patch
 
 import pytest
+from app.reconcile import Finding
 from fastapi.testclient import TestClient
 
-import app.dashboard as dashboard
-from app.models import Finding
-from app.security import create_token
+from app import dashboard
 from app.main import app
+from app.security import create_token
 
 
 def inr(value: float) -> str:
@@ -143,8 +142,7 @@ def test_home_shows_inr(client):
     r = client.get("/")
     assert r.status_code == 200
     expected = inr(round(sum(abs(f["impact"]) for f in client.get("/api/findings").json()), 2))
-    # check either found_total or month_total string appears
-    assert "₹" in r.text
+    assert expected in r.text
 
 
 def test_story_page_sources(client):
@@ -168,4 +166,3 @@ def test_type_filter(client):
 def test_leak_404(client):
     r = client.get("/leaks/9999")
     assert r.status_code == 404
-</arg_value>

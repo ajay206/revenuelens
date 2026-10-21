@@ -76,4 +76,3 @@ Tests use two categories:
 - **Integration tests** that load the legacy simulation if `DATABASE_URL` is
   available. These verify login flow, redirects, filtering, summary totals,
   and 404 behavior.
-</arg_value>

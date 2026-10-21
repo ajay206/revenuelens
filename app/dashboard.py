@@ -11,17 +11,19 @@ from fastapi import (
     HTTPException,
     Request,
 )
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import BaseModel
 
-from .db import ReadOnlyAdapter
+from app.config import get_settings
+
+from .adapters.postgres_readonly import ReadOnlyAdapter
+from .discovery import discover
 from .explain import Story
-from .findings import Finding, discover, run_checks
-from .schema import map_schema
+from .mapping import map_schema
+from .reconcile import Finding, run_checks
 from .security import decode_token
-from config import get_settings
 
 router = APIRouter()
 
@@ -136,7 +138,7 @@ def dashboard_user(request: Request) -> dict:
 
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        payload = decode_token(token)
+        decode_token(token)
     except jwt.InvalidTokenError as exc:
         raise HTTPException(status_code=401, detail="Invalid token") from exc
     # Verify user exists by reusing the same logic as app.auth.get_current_user
@@ -273,7 +275,6 @@ def api_findings(type: str | None = None):
 
 def dashboard_user_from_request(request: Request | None) -> dict:
     """Wrapper used by API routes to enforce auth."""
-    from fastapi import Depends
 
     return Depends(dashboard_user)
 
@@ -346,4 +347,3 @@ def api_summary():
 def _require_auth() -> None:
     """Raise 401 unconditionally for API-only calls not routed through dashboard_user."""
     raise HTTPException(status_code=401, detail="Not authenticated")
-</arg_value>

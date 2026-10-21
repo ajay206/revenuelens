@@ -19,4 +19,3 @@ def health():
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)
-</arg_value>
