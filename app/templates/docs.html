@@ -1,55 +1,79 @@
 {% extends "base.html" %}
 {% block title %}RevenueLens – Docs Generator{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">Docs</span>
+</nav>
+{% endblock %}
+{% block page_title %}Docs on demand{% endblock %}
+{% block page_subtitle %}Ask for a document in plain words. Every line links to its source.{% endblock %}
+{% block head_extra %}
+<style>
+.doc-content { font-size: 16px; line-height: 1.6; color: var(--text); }
+.doc-content h1, .doc-content h2, .doc-content h3 { color: var(--text); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+.doc-content h1 { font-size: 1.75rem; }
+.doc-content h2 { font-size: 1.5rem; }
+.doc-content h3 { font-size: 1.25rem; }
+.doc-content p { margin-bottom: 1rem; }
+.doc-content ul, .doc-content ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+.doc-content li { margin-bottom: 0.5rem; }
+.doc-content li.needs-confirmation { color: var(--warn); font-weight: 500; }
+.doc-content code { background: var(--accent-soft); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.9em; }
+.doc-content pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--accent-soft); color: var(--accent); border-radius: 999px; font-size: 13px; text-decoration: none; border: 1px solid transparent; transition: background 0.15s, border-color 0.15s; }
+.chip:hover { background: var(--accent); color: #fff; }
+.chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 999px; }
+@media (prefers-color-scheme: dark) {
+  .chip { background: rgba(129,140,248,0.15); color: var(--accent); }
+  .chip:hover { background: var(--accent); color: var(--bg); }
+}
+</style>
+{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>Documentation Generator</h1>
-    <p>Generate on-demand documentation from the knowledge base.</p>
-</div>
+<div class="card" style="max-width: 900px;">
+  <form method="get" action="/docs" class="doc-form">
+    <div class="form-group">
+      <label for="request">What should the document cover? <span class="required" style="color:var(--danger);">*</span></label>
+      <textarea id="request" name="request" rows="3" placeholder="e.g., document plan NMB_MAX_699, KT doc for invoicing flow, show all leaks" required>{{ request_value }}</textarea>
+    </div>
+    <div class="form-group">
+      <label for="level">Detail Level</label>
+      <select id="level" name="level">
+        <option value="exec" {% if level_value == 'exec' %}selected{% endif %}>Executive (summary only)</option>
+        <option value="analyst" {% if level_value == 'analyst' %}selected{% endif %}>Analyst (standard)</option>
+        <option value="engineer" {% if level_value == 'engineer' %}selected{% endif %}>Engineer (full detail + data sources)</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Generate</button>
+  </form>
 
-<form method="get" action="/docs" class="doc-form">
-    <div class="form-group">
-        <label for="request">Request <span class="required">*</span></label>
-        <textarea id="request" name="request" rows="3" placeholder="e.g., document plan NMB_MAX_699, KT doc for invoicing flow, show all leaks" required>{{ request_value }}</textarea>
-    </div>
-    <div class="form-group">
-        <label for="level">Detail Level</label>
-        <select id="level" name="level">
-            <option value="exec" {% if level_value == 'exec' %}selected{% endif %}>Executive (summary only)</option>
-            <option value="analyst" {% if level_value == 'analyst' %}selected{% endif %}>Analyst (standard)</option>
-            <option value="engineer" {% if level_value == 'engineer' %}selected{% endif %}>Engineer (full detail + data sources)</option>
-        </select>
-    </div>
-    <button type="submit" class="btn">Generate</button>
-</form>
+  <div class="chips" aria-label="Suggested prompts">
+    <a class="chip" href="/docs?request=document+plan+NMB_MAX_699&level=analyst">document plan NMB_MAX_699</a>
+    <a class="chip" href="/docs?request=KT+doc+for+invoicing+flow&level=engineer">KT doc for invoicing flow</a>
+    <a class="chip" href="/docs?request=show+all+leaks&level=exec">show all leaks</a>
+  </div>
+</div>
 
 {% if doc_html %}
-<hr style="margin: 2rem 0;">
-<div class="doc-output">
-    <h2>Generated Document</h2>
-    <div class="export-links">
-        <a href="{{ export_links.md }}" class="btn btn-secondary">Export Markdown</a>
-        <a href="{{ export_links.pdf }}" class="btn btn-secondary">Export PDF</a>
-        <a href="{{ export_links.confluence }}" class="btn btn-secondary">Export Confluence</a>
+<div class="card" style="max-width: 900px; margin-top: 24px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+    <h2 class="card-title" style="margin:0;">Generated document</h2>
+    <div class="export-links" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a href="{{ export_links.md }}" class="btn btn-secondary btn-sm">Export Markdown</a>
+      <a href="{{ export_links.pdf }}" class="btn btn-secondary btn-sm">Export PDF</a>
+      <a href="{{ export_links.confluence }}" class="btn btn-secondary btn-sm">Export Confluence</a>
     </div>
-    <div class="doc-content">
-        {{ doc_html | safe }}
-    </div>
+  </div>
+  <div class="doc-content">
+    {{ doc_html | safe }}
+  </div>
+</div>
+{% else %}
+<div class="card empty-state" style="max-width: 900px; margin-top: 24px; text-align:center; padding: 48px 24px;">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-2); margin-bottom:12px;" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+  <h3 style="margin:0 0 8px; color:var(--text);">No document yet</h3>
+  <p class="text-muted" style="margin:0;">Enter a request above and click Generate to create a document.</p>
 </div>
 {% endif %}
-
-<style>
-.doc-form { max-width: 800px; }
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-.form-group textarea, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
-.required { color: #e74c3c; }
-.export-links { margin-bottom: 1rem; }
-.export-links .btn { margin-right: 0.5rem; }
-.doc-content h3 { margin-top: 1.5rem; color: #2c3e50; }
-.doc-content ul { margin-left: 1.5rem; }
-.doc-content li { margin-bottom: 0.5rem; line-height: 1.5; }
-.doc-content li.needs-confirmation { color: #e74c3c; }
-.doc-content .badge { background: #e74c3c; color: white; padding: 0.1rem 0.5rem; border-radius: 3px; font-size: 0.75rem; }
-.doc-content em { color: #7f8c8d; font-size: 0.9rem; }
-</style>
 {% endblock %}

@@ -1,142 +1,843 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>{% block title %}RevenueLens{% endblock %}</title>
+
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
+    <!-- Theme & Design System CSS -->
     <style>
-        * { box-sizing: border-box; }
+        /* Reset & Box Sizing */
+        *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+        /* Root variables – Light */
+        :root {
+            --bg: #f8fafc;
+            --surface: #fff;
+            --border: #e5e7eb;
+            --text: #0f172a;
+            --text-2: #334155;
+            --accent: #4f46e5;
+            --accent-soft: #eef2ff;
+            --danger: #dc2626;
+            --danger-soft: #fee2e2;
+            --warn: #d97706;
+            --warn-soft: #fef3c7;
+            --ok: #16a34a;
+            --ok-soft: #dcfce7;
+            --info: #2563eb;
+            --info-soft: #dbeafe;
+            --radius: 12px;
+            --shadow: 0 1px 2px rgba(15,23,42,.06);
+            --focus-outline: 3px solid var(--accent);
+            --focus-offset: 2px;
+            --font-base: 16px;
+            --line-height: 1.5;
+        }
+        /* Dark theme overrides */
+        [data-theme="dark"] {
+            --bg: #0b1020;
+            --surface: #111827;
+            --border: #1f2937;
+            --text: #f8fafc;
+            --text-2: #cbd5e1;
+            --accent: #818cf8;
+            --accent-soft: #1e3a8a;
+            --danger: #dc2626;
+            --danger-soft: #7f1d1d;
+            --warn: #d97706;
+            --warn-soft: #7c2d12;
+            --ok: #16a34a;
+            --ok-soft: #14532d;
+            --info: #2563eb;
+            --info-soft: #1e40af;
+        }
+
+        html { font-size: var(--font-base); scroll-behavior: smooth; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            background: #f4f6f9;
-            color: #1a1a1a;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: var(--line-height);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
         }
-        .container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #fff;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        header h1 {
-            font-size: 1.4rem;
-            margin: 0;
-        }
-        header .company {
-            font-weight: 600;
-            color: #555;
-        }
-        header nav a {
-            color: #007bff;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-        main {
-            background: #fff;
-            margin: 1rem 0;
-            padding: 2rem;
+
+        /* Global form controls */
+        input[type=text], input[type=email], input[type=password], input[type=search], input:not([type]), select, textarea {
+            font: inherit;
+            font-size: 15px;
+            color: var(--text);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            padding: 8px 12px;
+            min-height: 40px;
         }
-        .big-number {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #c0392b;
-            margin: 1rem 0;
+        textarea { width:100%; min-height: 88px; }
+        select { padding-right: 32px; }
+        ::placeholder { color: var(--text-2); opacity: .8; }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
         }
-        .subtitle {
-            font-size: 1.1rem;
-            color: #666;
-            margin-bottom: 1.5rem;
+        :focus-visible {
+            outline: var(--focus-outline);
+            outline-offset: var(--focus-offset);
         }
-        .card {
-            background: #fafafa;
-            border: 1px solid #eee;
+
+        /* Form group */
+        .form-group { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+        .form-group label { font-size:15px; font-weight:600; color:var(--text); }
+
+        /* Links */
+        a { color: var(--accent); }
+        a:hover { text-decoration: underline; }
+        table.data-table td a { font-weight:600; color: var(--accent); }
+        .breadcrumbs a { color: var(--text-2); text-decoration:none; }
+        .breadcrumbs a:hover { color: var(--accent); }
+
+        /* Tabs */
+        .tabs { display:flex; gap:8px; flex-wrap:wrap; margin: 0 0 16px; }
+        .tab { padding: 8px 14px; border-radius: 999px; border:1px solid var(--border); background: var(--surface); color: var(--text-2); font-size:15px; font-weight:600; text-decoration:none; }
+        .tab.active, .tab[aria-current] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+        /* App Shell */
+        .app-shell {
+            display: grid;
+            grid-template-columns: 248px 1fr;
+            grid-template-rows: 64px 1fr;
+            min-height: 100vh;
+            background: var(--bg);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            grid-row: 1 / span 2;
+            grid-column: 1;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            align-self: stretch;
+            height: auto;
+            min-height: 100vh;
+            position: relative;
+        }
+        .sidebar nav {
+            position: sticky;
+            top: 0;
+        }
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 24px;
+        }
+        .sidebar .logo-mark {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
             border-radius: 6px;
-            padding: 1rem 1.5rem;
-            margin-bottom: 1rem;
+            flex-shrink: 0;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        th, td {
-            text-align: left;
-            padding: 0.75rem;
-            border-bottom: 1px solid #eee;
-        }
-        th {
-            background: #f0f4f8;
+        .sidebar .logo-text {
             font-weight: 600;
-            color: #444;
+            font-size: 1.125rem;
+            color: var(--text);
         }
-        a.leak-link {
-            color: #007bff;
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .nav-list a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: var(--text-2);
+            text-decoration: none;
+            border-radius: var(--radius);
+            font-weight: 500;
+        }
+        .nav-list a[aria-current="page"] {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+        .nav-list a:hover,
+        .nav-list a:focus-visible {
+            background: var(--accent-soft);
+            color: var(--accent);
+            outline: var(--focus-outline);
+            outline-offset: var(--focus-offset);
+        }
+        .nav-list svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Top Bar */
+        .topbar {
+            grid-row: 1;
+            grid-column: 2;
+            height: 64px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+        .topbar .left { font-weight: 600; font-size: 1.125rem; }
+        .topbar .right { display: flex; align-items: center; gap: 16px; }
+        .topbar button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-2);
+            padding: 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .topbar button:hover,
+        .topbar button:focus-visible {
+            background: var(--accent-soft);
+            color: var(--accent);
+            outline: var(--focus-outline);
+            outline-offset: var(--focus-offset);
+        }
+
+        /* Theme toggle icons */
+        #theme-toggle .icon-sun { display: none; }
+        #theme-toggle .icon-moon { display: block; }
+        [data-theme="dark"] #theme-toggle .icon-sun { display: block; }
+        [data-theme="dark"] #theme-toggle .icon-moon { display: none; }
+
+        /* User menu */
+        .user-menu {
+            position: relative;
+        }
+        .user-menu button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px 4px 4px;
+        }
+        .user-menu .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-soft);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .user-menu .email { font-size: 0.9375rem; color: var(--text); }
+        .user-menu .chevron { font-size: 0.875rem; color: var(--text-2); }
+        .dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 4px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            min-width: 180px;
+            z-index: 10;
+            display: none;
+            padding: 4px;
+        }
+        .dropdown a {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.875rem;
+            border-radius: 4px;
+        }
+        .dropdown a:hover,
+        .dropdown a:focus-visible {
+            background: var(--accent-soft);
+            color: var(--accent);
+            outline: var(--focus-outline);
+            outline-offset: var(--focus-offset);
+        }
+        .user-menu[open] .dropdown { display: block; }
+
+        /* Logout button in topbar */
+        .topbar .btn-logout { margin-left: 8px; }
+
+        /* Main Content */
+        main {
+            grid-row: 2;
+            grid-column: 2;
+            padding: 32px;
+            max-width: 1360px;
+            width: 100%;
+            min-width: 0;
+            margin: 0 auto;
+        }
+        .page-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .breadcrumbs {
+            font-size: 0.9375rem;
+        }
+        .breadcrumbs a {
+            color: var(--text-2);
             text-decoration: none;
         }
-        a.leak-link:hover {
+        .breadcrumbs a:hover,
+        .breadcrumbs a:focus-visible {
             text-decoration: underline;
         }
+        .breadcrumbs span { margin: 0 4px; }
+        .page-header h1 {
+            font-size: 1.75rem; /* 28px */
+            font-weight: 600;
+            margin: 0;
+        }
+        .page-header .subtitle {
+            font-size: 1rem; /* 16px */
+            color: var(--text-2);
+        }
+        .page-header .actions { margin-top: 0; }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+        }
+        .card-title {
+            font-size: 1.125rem; /* 18px */
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+        .kpi {
+            text-align: left;
+        }
+        .kpi-label {
+            font-size: 0.9375rem; /* 15px */
+            font-weight: 600;
+            color: var(--text-2);
+            margin-bottom: 4px;
+        }
+        .kpi-value {
+            font-size: 2.375rem; /* 38px */
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+        .kpi-sub {
+            font-size: 0.9375rem; /* 15px */
+            color: var(--text-2);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 10px 16px;
+            font-size: 0.9375rem; /* 15px */
+            font-weight: 500;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            cursor: pointer;
+            text-decoration: none;
+            min-height: 40px;
+        }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-secondary { background: var(--accent-soft); color: var(--accent); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-sm { 
+            padding: 6px 12px; 
+            font-size: 0.875rem; /* 14px */
+            min-height: 34px;
+        }
+
+        .btn:hover,
+        .btn:focus-visible {
+            opacity: 0.9;
+            outline: var(--focus-outline);
+            outline-offset: var(--focus-offset);
+        }
+
+        /* Badges */
         .badge {
             display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 12px;
-            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.875rem; /* 14px */
             font-weight: 600;
+            line-height: 1;
+            text-transform: capitalize;
         }
-        .badge-high { background: #d4edda; color: #155724; }
-        .badge-low { background: #fff3cd; color: #856404; }
-        form.login {
-            max-width: 320px;
-            margin: 2rem auto;
-        }
-        form.login input {
+        .badge-high { background: var(--danger-soft); color: var(--danger); }
+        .badge-medium { background: var(--warn-soft); color: var(--warn); }
+        .badge-low { background: var(--info-soft); color: var(--info); }
+        .badge-draft { background: var(--warn-soft); color: var(--warn); }
+        .badge-approved { background: var(--ok-soft); color: var(--ok); }
+        .badge-rejected { background: var(--danger-soft); color: var(--danger); }
+
+        /* Table */
+        .table-wrap { position: relative; }
+        table.data-table {
             width: 100%;
-            padding: 0.6rem;
-            margin: 0.4rem 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            border-collapse: collapse;
+            min-width: 600px;
         }
-        form.login button {
-            width: 100%;
-            padding: 0.6rem;
-            background: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
+        table.data-table th,
+        table.data-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9375rem; /* 15px */
+            vertical-align: middle;
+        }
+        table.data-table th {
+            position: sticky;
+            top: 0;
+            background: var(--surface);
+            font-weight: 600;
+            color: var(--text-2);
             cursor: pointer;
-            margin-top: 0.5rem;
+            text-transform: none;
+            font-size: 0.875rem; /* 14px */
         }
-        form.login .error {
-            color: #c0392b;
+        table.data-table th[data-sort]::after {
+            content: "↕";
+            margin-left: 6px;
+            font-size: 0.875rem;
+            color: var(--text-2);
+        }
+        table.data-table th[aria-sort="ascending"]::after { content: "↑"; color: var(--accent); }
+        table.data-table th[aria-sort="descending"]::after { content: "↓"; color: var(--accent); }
+        table.data-table tr {
+            height: 48px;
+        }
+        table.data-table td { white-space: normal; }
+        table.data-table td.nowrap, table.data-table td[data-value] { white-space: nowrap; }
+        .money { 
+            font-variant-numeric: tabular-nums; 
+            font-weight: 700; 
+            color: var(--text);
+            font-size: 1rem; /* 16px */
+        }
+        .table-toolbar {
+            display: flex;
+            gap: 12px;
+            padding: 8px 0;
+            align-items: center;
+        }
+        .table-toolbar input,
+        .table-toolbar select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.9375rem; /* 15px */
+            height: 40px;
+        }
+        .table-toolbar input[type="search"] {
+            min-width: 260px;
+        }
+        .pagination {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.9375rem; /* 15px */
+        }
+        .pagination button {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.875rem; /* 14px */
+            min-height: 34px;
+        }
+        .pagination button[disabled] { opacity: .5; cursor: default; }
+
+        .empty-state {
             text-align: center;
-            margin-top: 0.5rem;
+            padding: 48px 24px;
+            color: var(--text-2);
         }
-        select.filter {
-            padding: 0.4rem 0.6rem;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+        .empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; fill: var(--border); }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--border) 25%, var(--accent-soft) 50%, var(--border) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            height: 1rem;
         }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+
+        /* Misc */
+        .text-muted { color: var(--text-2); }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .app-shell { grid-template-columns: 72px 1fr; }
+            .sidebar .logo-text { display: none; }
+            .nav-list a .label { display: none; }
+            .nav-list a { justify-content: center; padding: 12px; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .app-shell { grid-template-columns: 1fr; grid-template-rows: 64px 1fr; }
+            .topbar { grid-column: 1; }
+            main { grid-column: 1; grid-row: 2; padding: 16px; }
+            .table-wrap { overflow-x: auto; }
+        }
+
+        /* Focus Visible */
+        :focus-visible {
+            outline: var(--focus-outline);
+            outline-offset: var(--focus-offset);
+        }
+
+        /* Skip Link */
+        .skip-link {
+            position: absolute;
+            left: -999px;
+            top: -999px;
+            background: var(--accent);
+            color: #fff;
+            padding: 8px 16px;
+            z-index: 100;
+        }
+        .skip-link:focus {
+            left: 16px;
+            top: 16px;
+        }
+        .kpi-value.money { font-size: 2.375rem; font-weight: 700; }
     </style>
+
+    {% block head_extra %}{% endblock %}
 </head>
 <body>
-    <header>
-        <span class="company">RevenueLens</span>
-        <span class="company">{{ company_name }}</span>
-        <nav><a href="/">Leaks</a> · <a href="/fixes">Fixes</a> · <a href="/reports">Reports</a> · <a href="/docs">Docs</a> · <a href="/logout">Logout</a></nav>
-    </header>
-    <div class="container">
-        <main>
-        {% block content %}{% endblock %}
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    {% block shell %}
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar" aria-label="Primary navigation">
+            <div class="logo">
+                <div class="logo-mark" aria-hidden="true"></div>
+                <span class="logo-text">RevenueLens</span>
+            </div>
+            <nav aria-label="Main navigation">
+                <ul class="nav-list">
+                    {% set path = request.url.path if request else '/' %}
+                    <li><a href="/" {% if path == '/' or path.startswith('/leaks') %}aria-current="page"{% endif %}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="label">Home</span>
+                    </a></li>
+                    <li><a href="/fixes" {% if path.startswith('/fixes') %}aria-current="page"{% endif %}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <span class="label">Fixes</span>
+                    </a></li>
+                    <li><a href="/reports" {% if path.startswith('/reports') %}aria-current="page"{% endif %}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        <span class="label">Reports</span>
+                    </a></li>
+                    <li><a href="/docs" {% if path.startswith('/docs') %}aria-current="page"{% endif %}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <span class="label">Docs</span>
+                    </a></li>
+                    <li><a href="/audit" {% if path.startswith('/audit') %}aria-current="page"{% endif %}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span class="label">Audit</span>
+                    </a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="left">{{ company_name|default('RevenueLens') }}</div>
+            <div class="right">
+                <button id="theme-toggle" aria-label="Toggle dark mode">
+                    <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+                {% if user %}
+                <div class="user-menu" id="user-menu" tabindex="-1">
+                    <button aria-haspopup="true" aria-expanded="false">
+                        <span class="avatar">{{ user.email[0].upper() }}</span>
+                        <span class="email">{{ user.email }}</span>
+                        <span class="chevron">▾</span>
+                    </button>
+                    <div class="dropdown" role="menu">
+                        <a href="/profile" role="menuitem">Profile</a>
+                        <a href="/settings" role="menuitem">Settings</a>
+                        <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
+                        <a href="/logout" role="menuitem">Log out</a>
+                    </div>
+                </div>
+                <a href="/logout" class="btn btn-secondary btn-sm btn-logout">Log out</a>
+                {% else %}
+                <a href="/login" class="btn btn-primary">Log in</a>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main" role="main">
+            {% block breadcrumbs %}
+            <nav class="breadcrumbs" aria-label="Breadcrumb">
+                <a href="/">Home</a>
+            </nav>
+            {% endblock %}
+
+            <header class="page-header">
+                <h1>{% block page_title %}{% endblock %}</h1>
+                <div class="subtitle">{% block page_subtitle %}{% endblock %}</div>
+                <div class="actions">{% block page_actions %}{% endblock %}</div>
+            </header>
+
+            {% block content %}{% endblock %}
         </main>
     </div>
+    {% endblock %}
+
+    <!-- Theme Script -->
+    <script>
+        (function() {
+            const storageKey = 'rl-theme';
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const saved = localStorage.getItem(storageKey);
+            const theme = saved || (prefersDark ? 'dark' : 'light');
+            document.documentElement.dataset.theme = theme;
+
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    const newTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+                    document.documentElement.dataset.theme = newTheme;
+                    localStorage.setItem(storageKey, newTheme);
+                });
+            }
+
+            // User menu toggle
+            const userMenu = document.getElementById('user-menu');
+            if (userMenu) {
+                const btn = userMenu.querySelector('button');
+                const dropdown = userMenu.querySelector('.dropdown');
+                function closeMenu() {
+                    userMenu.removeAttribute('open');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const opened = userMenu.hasAttribute('open');
+                    userMenu.setAttribute('open', !opened);
+                    btn.setAttribute('aria-expanded', !opened);
+                });
+                document.addEventListener('click', (e) => {
+                    if (!userMenu.contains(e.target)) {
+                        closeMenu();
+                    }
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        closeMenu();
+                    }
+                });
+                // Prevent dropdown clicks from closing
+                dropdown.addEventListener('click', (e) => e.stopPropagation());
+            }
+        })();
+    </script>
+
+    <!-- Table Enhancer -->
+    <script>
+        (function() {
+            const tables = document.querySelectorAll('table.data-table[data-enhance]');
+            tables.forEach(table => {
+                const wrap = document.createElement('div');
+                wrap.className = 'table-wrap is-loading';
+                table.parentNode.insertBefore(wrap, table);
+                wrap.appendChild(table);
+
+                // Toolbar
+                const toolbar = document.createElement('div');
+                toolbar.className = 'table-toolbar';
+                const searchInput = document.createElement('input');
+                searchInput.type = 'search';
+                searchInput.setAttribute('aria-label', 'Search table');
+                toolbar.appendChild(searchInput);
+
+                // Optional column filter
+                const filterCol = table.dataset.filterCol;
+                let filterSelect = null;
+                if (filterCol) {
+                    const idx = parseInt(filterCol, 10);
+                    const values = new Set();
+                    table.querySelectorAll('tbody tr').forEach(row => {
+                        const cell = row.children[idx];
+                        if (cell) values.add(cell.textContent.trim());
+                    });
+                    filterSelect = document.createElement('select');
+                    filterSelect.innerHTML = '<option value="">All</option>';
+                    [...values].sort().forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v;
+                        opt.textContent = v;
+                        filterSelect.appendChild(opt);
+                    });
+                    toolbar.appendChild(filterSelect);
+                }
+
+                // Pagination controls placeholder
+                const pagination = document.createElement('div');
+                pagination.className = 'pagination';
+                toolbar.appendChild(pagination);
+                wrap.insertBefore(toolbar, table);
+
+                // Skeleton row
+                const skeleton = document.createElement('tr');
+                skeleton.innerHTML = '<td colspan="100%" class="skeleton"></td>';
+                const tbody = table.querySelector('tbody');
+                tbody.insertBefore(skeleton, tbody.firstChild);
+
+                // State
+                const pageSize = parseInt(table.dataset.pageSize || '10', 10);
+                let currentPage = 1;
+                let rows = Array.from(tbody.querySelectorAll('tr')).filter(r => r !== skeleton);
+                const totalRows = rows.length;
+
+                // Helpers
+                function render() {
+                    const query = searchInput.value.toLowerCase();
+                    const filterVal = filterSelect ? filterSelect.value : '';
+                    const filtered = rows.filter(row => {
+                        const txt = row.textContent.toLowerCase();
+                        const matchSearch = !query || txt.includes(query);
+                        const matchFilter = !filterVal || (filterCol && row.children[parseInt(filterCol,10)].textContent.trim() === filterVal);
+                        return matchSearch && matchFilter;
+                    });
+
+                    // Empty state
+                    const emptyRow = tbody.querySelector('.empty-state-row');
+                    if (emptyRow) emptyRow.remove();
+
+                    if (filtered.length === 0) {
+                        const empty = document.createElement('tr');
+                        empty.className = 'empty-state-row';
+                        empty.innerHTML = '<td colspan="100%" class="empty-state"><svg aria-hidden="true"><rect width="100%" height="100%" fill="none"/></svg>No matching results</td>';
+                        tbody.appendChild(empty);
+                    }
+
+                    // Pagination
+                    const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+                    if (currentPage > totalPages) currentPage = totalPages;
+                    const startIdx = (currentPage - 1) * pageSize;
+                    const endIdx = startIdx + pageSize;
+
+                    // Hide all then show slice
+                    rows.forEach(r => r.style.display = 'none');
+                    filtered.slice(startIdx, endIdx).forEach(r => r.style.display = '');
+
+                    // Update pagination UI
+                    pagination.innerHTML = '';
+                    const info = document.createElement('span');
+                    const a = startIdx + 1;
+                    const b = Math.min(endIdx, filtered.length);
+                    info.textContent = `Showing ${a}–${b} of ${filtered.length}`;
+                    pagination.appendChild(info);
+
+                    const prev = document.createElement('button');
+                    prev.textContent = 'Prev';
+                    prev.disabled = currentPage === 1;
+                    prev.addEventListener('click', () => { currentPage--; render(); });
+                    pagination.appendChild(prev);
+
+                    const next = document.createElement('button');
+                    next.textContent = 'Next';
+                    next.disabled = currentPage === totalPages;
+                    next.addEventListener('click', () => { currentPage++; render(); });
+                    pagination.appendChild(next);
+                }
+
+                // Sorting
+                const headers = table.querySelectorAll('th[data-sort]');
+                headers.forEach((th, i) => {
+                    let asc = true;
+                    th.addEventListener('click', () => {
+                        const type = th.dataset.sort;
+                        rows.sort((a, b) => {
+                            let av = a.children[i].dataset.value || a.children[i].textContent.trim();
+                            let bv = b.children[i].dataset.value || b.children[i].textContent.trim();
+                            if (type === 'num') {
+                                av = parseFloat(av) || 0;
+                                bv = parseFloat(bv) || 0;
+                            } else {
+                                av = av.toLowerCase();
+                                bv = bv.toLowerCase();
+                            }
+                            if (av < bv) return asc ? -1 : 1;
+                            if (av > bv) return asc ? 1 : -1;
+                            return 0;
+                        });
+                        asc = !asc;
+                        // Update aria-sort on all headers
+                        headers.forEach(h => h.removeAttribute('aria-sort'));
+                        th.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
+                        render();
+                    });
+                });
+
+                // Event listeners
+                searchInput.addEventListener('input', () => { currentPage = 1; render(); });
+                if (filterSelect) {
+                    filterSelect.addEventListener('change', () => { currentPage = 1; render(); });
+                }
+
+                // Initial render after short timeout to simulate loading
+                setTimeout(() => {
+                    wrap.classList.remove('is-loading');
+                    skeleton.remove();
+                    render();
+                }, 100);
+            });
+        })();
+    </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -219,4 +219,22 @@ Use the oracle to validate your detection logic:
 python -m legacy_sim oracle --database-url postgresql://... data/legacy_sim/ground_truth.json
 ```
 
-If the oracle returns “All leaks verified”, your solution matches the ground truth and you’re ready for the next step.  
+If the oracle returns “All leaks verified”, your solution matches the ground truth and you’re ready for the next step.
+
+## Screenshots
+
+All data is synthetic (Nimbus Telecom demo).
+
+| Page | Light | Dark |
+|---|---|---|
+| Login | ![Login light](docs/screenshots/login-light.png) | ![Login dark](docs/screenshots/login-dark.png) |
+| Home dashboard | ![Home dashboard light](docs/screenshots/home-light.png) | ![Home dashboard dark](docs/screenshots/home-dark.png) |
+| Leak story | ![Leak story light](docs/screenshots/story-approved-light.png) | ![Leak story dark](docs/screenshots/story-approved-dark.png) |
+| Fix approval queue | ![Fix approval queue light](docs/screenshots/fixes-light.png) | ![Fix approval queue dark](docs/screenshots/fixes-dark.png) |
+| Reports | ![Reports light](docs/screenshots/reports-light.png) | ![Reports dark](docs/screenshots/reports-dark.png) |
+| Docs on demand | ![Docs on demand light](docs/screenshots/docs-light.png) | ![Docs on demand dark](docs/screenshots/docs-dark.png) |
+| Audit log | ![Audit log light](docs/screenshots/audit-light.png) | ![Audit log dark](docs/screenshots/audit-dark.png) |
+
+Tablet view: ![Home on tablet](docs/screenshots/home-tablet.png)
+
+See the [UI handbook](docs/handbook/ui.md) for design tokens, components and how to retake screenshots.

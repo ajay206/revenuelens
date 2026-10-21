@@ -1,21 +1,84 @@
 {% extends "base.html" %}
+
 {% block title %}RevenueLens – Reports{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/">Home</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">Reports</span>
+</nav>
+{% endblock %}
+
+{% block page_title %}Reports{% endblock %}
+
+{% block page_subtitle %}
+Download your findings to share with finance or audit.
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-    <h1>Reports</h1>
-    <p>Download findings as CSV or PDF.</p>
+<div class="grid-2" style="gap: 24px;">
+
+    <!-- CSV Download Card -->
+    <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;gap:12px;">
+            <!-- simple file‑csv icon -->
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 4h16v16H4z"/>
+                <path d="M4 9h16M9 4v5"/>
+                <path d="M14 14h4v4h-4z"/>
+            </svg>
+            <h2 style="margin:0;font-size:24px;font-weight:600;color:var(--text);">Findings CSV</h2>
+        </div>
+        <p class="text-muted" style="margin-top:12px;">
+            All findings with full‑detail columns, ready for import into spreadsheets or BI tools.
+        </p>
+        <a href="/api/reports/findings.csv" class="btn btn-primary" style="margin-top:16px;">
+            Download CSV
+        </a>
+    </div>
+
+    <!-- PDF Download Card -->
+    <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;gap:12px;">
+            <!-- simple file‑pdf icon -->
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 4h16v16H4z"/>
+                <path d="M8 8h8v8H8z"/>
+                <path d="M8 12h8"/>
+            </svg>
+            <h2 style="margin:0;font-size:24px;font-weight:600;color:var(--text);">Findings PDF</h2>
+        </div>
+        <p class="text-muted" style="margin-top:12px;">
+            A summary report with the top 200 findings in a printable layout.
+        </p>
+        <a href="/api/reports/findings.pdf" class="btn btn-primary" style="margin-top:16px;">
+            Download PDF
+        </a>
+    </div>
+
 </div>
 
-<div class="card-grid">
-    <div class="card">
-        <h3>Findings CSV</h3>
-        <p>All findings with full detail columns.</p>
-        <a href="/api/reports/findings.csv" class="btn">Download CSV</a>
+<!-- Info Card -->
+<div class="card" style="margin-top:24px;">
+    <div class="card-title" style="display:flex;align-items:center;gap:12px;">
+        <!-- info icon -->
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <circle cx="12" cy="16" r="1"/>
+        </svg>
+        <h2 style="margin:0;font-size:24px;font-weight:600;color:var(--text);">What’s inside</h2>
     </div>
-    <div class="card">
-        <h3>Findings PDF</h3>
-        <p>Summary report with top 200 findings table.</p>
-        <a href="/api/reports/findings.pdf" class="btn">Download PDF</a>
-    </div>
+    <ul class="text-muted" style="margin-top:12px;margin-left:20px;">
+        <li>Finding ID, description, and severity.</li>
+        <li>Revenue impact (₹) – formatted with <code>inr_in</code>.</li>
+        <li>Recommendation and remediation status.</li>
+        <li>Timestamp of detection.</li>
+        <li>Link to the underlying audit log entry.</li>
+    </ul>
 </div>
 {% endblock %}

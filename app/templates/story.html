@@ -1,31 +1,231 @@
 {% extends "base.html" %}
+
 {% block title %}Leak Story – RevenueLens{% endblock %}
+
+{% block head_extra %}
+<style>
+/* Story grid layout */
+.story-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .story-grid { grid-template-columns: 1fr; }
+}
+
+/* Cards */
+.card h2.card-title { font-size: 24px; margin: 0 0 12px; color: var(--text); }
+.card h3 { font-size: 18px; margin: 16px 0 8px; color: var(--text); }
+.card p { font-size: 16px; line-height: 1.5; color: var(--text-2); margin: 0; }
+
+/* What to do callout */
+.callout-accent {
+  background: var(--accent-soft);
+  border-left: 4px solid var(--accent);
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+.callout-accent p { color: var(--text); font-weight: 600; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-item {
+  position: relative;
+  padding-left: 16px;
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: var(--text-2);
+}
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+}
+.timeline-item strong { font-size: 15px; font-weight: 700; color: var(--text); display: inline-block; margin-right: 8px; }
+
+/* Money card */
+.kpi-value { font-size: 38px; font-weight: 700; color: var(--text); }
+.kpi-label { font-size: 15px; color: var(--text-2); }
+.kpi-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--border); }
+.kpi-row:first-child { border-top: none; padding-top: 0; }
+.kpi-row .kpi-value { font-size: 16px; font-weight: 700; color: var(--text); }
+
+/* Citation chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 15px;
+  color: var(--text);
+  text-decoration: none;
+}
+.chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Badge capitalization */
+.badge { text-transform: capitalize; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/">Home</a>
+  <span aria-hidden="true">/</span>
+  <a href="/">Leaks</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">Leak #{{ leak_id }}</span>
+</nav>
+{% endblock %}
+
+{% block page_title %}{{ story.title }}{% endblock %}
+
+{% block page_actions %}
+  <span class="badge badge-{{ severity_level|lower }}">{{ severity_level }}</span>
+  {% if story.confidence == 'high' %}
+    <span class="badge badge-high">High</span>
+  {% else %}
+    <span class="badge badge-low">Needs confirmation</span>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
-    <h2>{{ story.title }}</h2>
-    <div class="big-number">{{ inr(story.money_impact) }}</div>
+<div class="story-grid">
+  <!-- LEFT COLUMN (2fr) -->
+  <div style="display:flex; flex-direction:column; gap:24px;">
+    <!-- Summary Card -->
+    <div class="card">
+      <h3>What happened</h3>
+      <p>{{ story.what }}</p>
 
-    <div class="card"><strong>What:</strong> {{ story.what }}</div>
-    <div class="card"><strong>Since when:</strong> {{ story.since_when }}</div>
-    <div class="card"><strong>Root cause:</strong> {{ story.root_cause }}</div>
-    <div class="card"><strong>Who affected:</strong> {{ story.who_affected }}</div>
-    <div class="card"><strong>What to do:</strong> {{ story.what_to_do }}</div>
+      <h3>Why</h3>
+      <p>{{ story.root_cause }}</p>
 
-    <div style="margin-top:1rem;">
-        <span class="badge {% if story.confidence == 'high' %}badge-high{% else %}badge-low{% endif %}">
-            {{ story.confidence }}
-        </span>
+      <h3>Who is affected</h3>
+      <p>{{ story.who_affected }}</p>
+
+      <h3>What to do</h3>
+      <div class="callout-accent">
+        <p>{{ story.what_to_do }}</p>
+      </div>
     </div>
 
-    <h3 style="margin-top:2rem;">Sources</h3>
-    <ul>
+    <!-- Timeline Card -->
+    <div class="card">
+      <h2 class="card-title">Timeline</h2>
+      <div class="timeline">
+        <div class="timeline-item"><strong>Started:</strong> {{ story.since_when }}</div>
+        <div class="timeline-item"><strong>Billed month:</strong> {{ period_text }}</div>
+        <div class="timeline-item"><strong>Found by RevenueLens:</strong> {{ story.check }}</div>
+        <div class="timeline-item"><strong>Fix:</strong>
+          {% if not fix %}
+            No fix drafted yet
+          {% elif fix.status == 'draft' %}
+            Drafted by {{ fix.created_by }}
+          {% elif fix.status == 'approved' %}
+            Approved by {{ fix.decided_by }}
+          {% elif fix.status == 'rejected' %}
+            Rejected by {{ fix.decided_by }}
+          {% else %}
+            {{ fix.status|capitalize }}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Sources Card -->
+    <div class="card">
+      <h2 class="card-title">Sources</h2>
+      <div class="chips-wrap">
         {% for c in story.citations %}
-        <li>{{ c.type }}: {{ c.ref }}</li>
+          <span class="chip">
+            <svg aria-hidden="true" width="12" height="12" fill="currentColor">
+              <use href="#icon-{{ c.type|lower }}"></use>
+            </svg>
+            {{ c.type }}: {{ c.ref }}
+          </span>
         {% endfor %}
-    </ul>
+      </div>
+    </div>
+  </div>
 
-    <hr style="margin: 2rem 0;">
+  <!-- RIGHT COLUMN (1fr) -->
+  <div style="display:flex; flex-direction:column; gap:24px;">
+    <!-- Money Impact Card -->
+    <div class="card">
+      <h2 class="card-title">Financial impact</h2>
+      <div class="kpi-value money" title="{{ inr(story.money_impact) }}">{{ inr_in(story.money_impact) }}</div>
+      <div style="margin-top:16px;">
+        <div class="kpi-row">
+          <span class="kpi-label">Customer</span>
+          <span class="kpi-value">{{ story.customer_id or finding.customer_id }}</span>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Records</span>
+          <span class="kpi-value">{{ finding.record_ids|length if finding.record_ids else '—' }}</span>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Month</span>
+          <span class="kpi-value">{{ period_text }}</span>
+        </div>
+      </div>
+    </div>
 
-    <form method="post" action="/leaks/{{ leak_id }}/draft" style="display:inline;">
-        <button type="submit" class="btn btn-primary">Draft a fix</button>
-    </form>
+    <!-- Actions Card -->
+    <div class="card">
+      <h2 class="card-title">Actions</h2>
+
+      {% if not fix %}
+        <form method="post" action="/leaks/{{ leak_id }}/draft">
+          <button type="submit" class="btn btn-primary">Draft a fix</button>
+        </form>
+
+      {% elif fix.status == 'draft' %}
+        <p class="text-muted">A fix is waiting for approval</p>
+
+        <form method="post" action="/fixes/{{ fix.id }}/approve" style="margin-top:12px;">
+          <div class="form-group">
+            <label for="approve-note-{{ fix.id }}" class="text-muted">Note (optional)</label>
+            <textarea id="approve-note-{{ fix.id }}" name="note" rows="2" class="input"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Approve</button>
+        </form>
+
+        <form method="post" action="/fixes/{{ fix.id }}/reject" style="margin-top:12px;">
+          <div class="form-group">
+            <label for="reject-note-{{ fix.id }}" class="text-muted">Note (optional)</label>
+            <textarea id="reject-note-{{ fix.id }}" name="note" rows="2" class="input"></textarea>
+          </div>
+          <button type="submit" class="btn btn-danger">Reject</button>
+        </form>
+
+      {% else %}
+        <span class="badge badge-{{ fix.status|lower }}">{{ fix.status }}</span>
+        <p class="text-muted" style="margin-top:8px;">Decided by {{ fix.decided_by }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endblock %}

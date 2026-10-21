@@ -1,70 +1,99 @@
 {% extends "base.html" %}
 {% block title %}Fix Approval Queue – RevenueLens{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <a href="/">Home</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">Fixes</span>
+</nav>
+{% endblock %}
+{% block page_title %}Fix Approval Queue{% endblock %}
+{% block page_subtitle %}Approve or reject suggested fixes. Nothing changes in billing until a person approves.{% endblock %}
+{% block page_actions %}
+  <div class="tabs" role="tablist" aria-label="Filter fixes by status">
+    {% for s in statuses %}
+      <a href="?status={{ s }}" class="tab {% if s == current_status %}active{% endif %}" role="tab" {% if s == current_status %}aria-current="true"{% endif %}>
+        {{ s|title }}
+        {% if s == current_status %}
+          <span class="badge badge-low" style="margin-left:6px; font-size:12px;">{{ fixes|selectattr('status','equalto',s)|list|length }}</span>
+        {% endif %}
+      </a>
+    {% endfor %}
+    <a href="?status=" class="tab {% if current_status is none %}active{% endif %}" role="tab" {% if current_status is none %}aria-current="true"{% endif %}>All</a>
+  </div>
+{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h2>Fix Approval Queue</h2>
-    <div class="tabs">
-        {% for s in statuses %}
-        <a href="?status={{ s }}" class="tab {% if s == current_status %}active{% endif %}">
-            {{ s|title }} {% if s == current_status %}({{ fixes|selectattr('status','equalto',s)|list|length }}){% endif %}
-        </a>
-        {% endfor %}
-        <a href="?status=" class="tab {% if current_status is none %}active{% endif %}">All</a>
-    </div>
-</div>
-
-{% if fixes %}
-<table class="data-table">
-    <thead>
+  <div class="table-wrap is-loading">
+    <table class="data-table" data-enhance data-page-size="10" data-filter-col="1">
+      <thead>
         <tr>
-            <th>Title</th>
-            <th>Check</th>
-            <th>Customer</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Created By</th>
-            <th>Created At</th>
-            <th>Actions</th>
+          <th data-sort="text">Title</th>
+          <th data-sort="text">Check</th>
+          <th data-sort="text">Customer</th>
+          <th data-sort="num">Amount</th>
+          <th data-sort="text">Status</th>
+          <th data-sort="text">Created</th>
+          <th>Actions</th>
         </tr>
-    </thead>
-    <tbody>
-        {% for fix in fixes %}
-        <tr>
-            <td>{{ fix.title }}</td>
-            <td>{{ fix.check_name }}</td>
-            <td>{{ fix.customer_id or '—' }}</td>
-            <td>{{ inr(fix.amount) }}</td>
-            <td>
-                <span class="badge badge-{{ fix.status }}">
-                    {{ fix.status|title }}
-                </span>
-            </td>
-            <td>{{ fix.created_by }}</td>
-            <td>{{ fix.created_at|string|truncate(16, True, '') if fix.created_at else '—' }}</td>
-            <td>
-                {% if fix.status == 'draft' %}
-                <form method="post" action="/fixes/{{ fix.id }}/approve" style="display:inline;" onsubmit="return confirm('Approve this fix?');">
-                    <input type="text" name="note" placeholder="Optional note" style="width:120px;">
-                    <button type="submit" class="btn btn-primary btn-sm">Approve</button>
-                </form>
-                <form method="post" action="/fixes/{{ fix.id }}/reject" style="display:inline;" onsubmit="return confirm('Reject this fix?');">
-                    <input type="text" name="note" placeholder="Optional note" style="width:120px;">
-                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
-                </form>
+      </thead>
+      <tbody>
+        {% if fixes %}
+          {% for fix in fixes %}
+            <tr>
+              <td>{{ fix.title }}</td>
+              <td>{{ fix.check_name }}</td>
+              <td>{{ fix.customer_id or '—' }}</td>
+              <td class="money" data-value="{{ fix.amount }}">{{ inr_in(fix.amount) }}</td>
+              <td>
+                {% set status = fix.status %}
+                {% if status == 'approved' %}
+                  <span class="badge badge-approved">Approved</span>
+                {% elif status == 'rejected' %}
+                  <span class="badge badge-rejected">Rejected</span>
+                {% elif status == 'draft' %}
+                  <span class="badge badge-draft">Draft</span>
                 {% else %}
-                <span class="text-muted">Decided by {{ fix.decided_by or '—' }}</span>
-                {% if fix.decision_note %}
-                <br><small>{{ fix.decision_note }}</small>
+                  <span class="badge badge-{{ status }}">{{ status|title }}</span>
                 {% endif %}
+              </td>
+              <td>{{ fix.created_at|string|truncate(16, True, '') if fix.created_at else '—' }}</td>
+              <td>
+                {% if fix.status == 'draft' %}
+                  <form method="post" action="/fixes/{{ fix.id }}/approve" class="form-inline" style="display:inline-flex; gap:8px; align-items:center;" onsubmit="return confirm('Approve this fix?');">
+                    <label for="approve-note-{{ fix.id }}" class="visually-hidden">Approval note</label>
+                    <input type="text" name="note" id="approve-note-{{ fix.id }}" placeholder="Optional note" aria-label="Approval note" style="width:160px;">
+                    <button type="submit" class="btn btn-primary btn-sm">Approve</button>
+                  </form>
+                  <form method="post" action="/fixes/{{ fix.id }}/reject" class="form-inline" style="display:inline-flex; gap:8px; align-items:center;" onsubmit="return confirm('Reject this fix?');">
+                    <label for="reject-note-{{ fix.id }}" class="visually-hidden">Rejection note</label>
+                    <input type="text" name="note" id="reject-note-{{ fix.id }}" placeholder="Optional note" aria-label="Rejection note" style="width:160px;">
+                    <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                  </form>
+                {% else %}
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <span class="text-muted">Decided by {{ fix.decided_by or '—' }}</span>
+                    {% if fix.decision_note %}
+                      <span class="text-muted" style="font-size:14px;">{{ fix.decision_note }}</span>
+                    {% endif %}
+                  </div>
                 {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<div class="card" style="text-align:center; padding:3rem;">
-    <p class="text-muted">No fixes found{% if current_status %} for status "{{ current_status }}"{% endif %}.</p>
-</div>
-{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+    {% if not fixes %}
+      <div class="empty-state" style="padding:48px 24px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-2); margin-bottom:16px;">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <h3 style="margin:0 0 8px; font-size:18px;">No fixes found</h3>
+        <p class="text-muted" style="margin:0;">
+          {% if current_status %}No fixes with status "{{ current_status }}".{% else %}No fixes in the queue.{% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}
