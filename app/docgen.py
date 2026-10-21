@@ -6,7 +6,6 @@ Deterministic docs-on-demand generator. No LLM required.
 from __future__ import annotations
 
 import html
-import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -17,7 +16,6 @@ from fpdf import FPDF
 from app.learning import Rule
 from app.reconcile import Finding
 from app.reports import _latin1
-
 
 # --------------------------------------------------------------------------- #
 # Dataclasses
@@ -66,7 +64,6 @@ def classify(request: str, known_plans: list[str] = ()) -> tuple[str, str | None
     Subject: matched plan id or discount id if found, else None.
     """
     text = request.lower()
-    known_plans_lower = [p.lower() for p in known_plans]
 
     # 1. Plan ID match (case-insensitive)
     for plan in known_plans:
@@ -131,9 +128,7 @@ def _get_plan_rules(kb: KnowledgeBase, plan_id: str) -> list[Rule]:
     """Return rules relevant to a plan: plan_fee, included_data, overage_rate, usage_rate (keys starting with plan_id), observed_fee."""
     relevant = []
     for rule in kb.rules:
-        if rule.kind in ("plan_fee", "included_data", "overage_rate", "observed_fee") and rule.key == plan_id:
-            relevant.append(rule)
-        elif rule.kind == "usage_rate" and rule.key.startswith(f"{plan_id}:"):
+        if rule.kind in ("plan_fee", "included_data", "overage_rate", "observed_fee") and rule.key == plan_id or rule.kind == "usage_rate" and rule.key.startswith(f"{plan_id}:"):
             relevant.append(rule)
     return relevant
 
