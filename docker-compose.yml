@@ -24,6 +24,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?}
       ADMIN_EMAIL: ${ADMIN_EMAIL:?}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
+      LEGACY_DATABASE_URL: postgresql://nimbus:${LEGACY_DB_PASSWORD:-nimbus-dev-only}@legacy-db:5432/nimbus
+      RL_LLM: ${RL_LLM:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:

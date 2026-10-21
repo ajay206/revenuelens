@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}RevenueLens – Dashboard{% endblock %}
+{% block content %}
+    <div class="big-number">{{ inr(totals.month_total) }} leaking this month</div>
+    <div class="subtitle">{{ inr(totals.found_total) }} found so far · {{ totals.count }} leaks detected</div>
+
+    <form method="get" action="/" style="margin-bottom:1rem;">
+        <label for="type">Filter by leak type:</label>
+        <select id="type" name="type" class="filter" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for t in types %}
+            <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Type</th>
+                <th>Customer</th>
+                <th>Money</th>
+                <th>Title</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in findings %}
+            <tr>
+                <td><a href="/leaks/{{ loop.index0 }}" class="leak-link">{{ loop.index0 }}</a></td>
+                <td>{{ f.check }}</td>
+                <td>{{ f.customer_id or "—" }}</td>
+                <td>{{ inr(abs(f.impact)) }}</td>
+                <td>{{ f.description }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5">No leaks found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
