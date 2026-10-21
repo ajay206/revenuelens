@@ -1,3 +1,48 @@
+# RevenueLens
+
+AI‑powered revenue assurance that finds billing leaks – read‑only, no data leaves your system.
+
+## Try it in one command
+
+```bash
+curl -O https://raw.githubusercontent.com/ajay206/revenuelens/main/docker-compose.demo.yml
+docker compose -f docker-compose.demo.yml up
+```
+
+Open your browser to **http://localhost:8000**.
+
+### Demo credentials (synthetic demo‑only)
+
+| Email                     | Password          |
+|---------------------------|-------------------|
+| demo@revenuelens.local    | revenuelens-demo  |
+
+These credentials are **synthetic** and only work for the demo environment.
+
+> **Note:** All data is synthetic – Nimbus Telecom, ~500 customers, with planted billing leaks. No real customer data is used.
+
+#### Optional LLM key
+
+* Provide `GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `GEMINI_API_KEY` as environment variables to get real AI‑generated leak stories.
+* If none are set, a **fake** LLM implementation is used (still shows the UI flow).
+
+#### What to click
+
+1. **Leaks** – list of detected billing leaks.  
+2. Click a leak → **Story** with citations.  
+3. **Fixes** – draft a fix, approve it in the queue.  
+4. **Reports** – download CSV / PDF summaries.  
+5. **Docs** – on‑demand documentation (e.g., “document plan NMB_MAX_699”).
+
+The demo runs the image `ghcr.io/ajay206/revenuelens:latest`.
+
+When you are done:
+
+```bash
+docker compose -f docker-compose.demo.yml down -v
+```
+
+---
 # RevenueLens – Step 1
 
 ## What is RevenueLens?

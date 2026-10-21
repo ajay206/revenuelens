@@ -1,0 +1,44 @@
+# Run the demo with:
+#   docker compose -f docker-compose.demo.yml up
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: revenuelens
+      POSTGRES_PASSWORD: revenuelens
+      POSTGRES_DB: revenuelens
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "revenuelens"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    image: ${RL_IMAGE:-ghcr.io/ajay206/revenuelens:latest}
+    command: ["bash", "scripts/demo-entrypoint.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://revenuelens:revenuelens@db:5432/revenuelens
+      LEGACY_DATABASE_URL: postgresql://revenuelens:revenuelens@db:5432/revenuelens
+      COMPANY_ID: 11111111-2222-3333-4444-555555555555
+      COMPANY_NAME: "Nimbus Telecom (synthetic demo)"
+      JWT_SECRET: demo-only-not-secret
+      ADMIN_EMAIL: demo@revenuelens.local
+      ADMIN_PASSWORD: revenuelens-demo
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "127.0.0.1:${DEMO_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health').status == 200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+    restart: unless-stopped
