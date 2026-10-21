@@ -33,6 +33,38 @@ services:
       - internal
       - edge
 
+  legacy-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: nimbus
+      POSTGRES_DB: nimbus
+      POSTGRES_PASSWORD: ${LEGACY_DB_PASSWORD:-nimbus-dev-only}
+    volumes:
+      - legacy_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "nimbus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+    profiles:
+      - legacy-sim
+
+  legacy-sim:
+    build: .
+    command: python -m legacy_sim load --seed ${LEGACY_SEED:-42} --customers 500
+    environment:
+      LEGACY_DATABASE_URL: postgresql://nimbus:${LEGACY_DB_PASSWORD:-nimbus-dev-only}@legacy-db:5432/nimbus
+    depends_on:
+      legacy-db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - internal
+    profiles:
+      - legacy-sim
+
 networks:
   internal:
     internal: true
@@ -41,3 +73,4 @@ networks:
 
 volumes:
   pgdata:
+  legacy_pgdata:

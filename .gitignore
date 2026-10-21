@@ -40,3 +40,6 @@ docker-compose.override.yml
 
 # Per-company deployments (secrets)
 deployments/
+
+# Generated legacy data
+data/

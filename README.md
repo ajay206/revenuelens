@@ -108,3 +108,70 @@ The CI enforces:
 Future steps will add AI‑driven rule inference, anomaly detection, and a user‑facing dashboard, all built on top of this secure, isolated foundation.  
 
 ---  
+
+## Step 2: Nimbus Telecom legacy simulator  
+
+The second step of the RevenueLens interview provides a synthetic “legacy” billing database that mimics the messiness of an old telco platform.  
+
+### What you get  
+* A PostgreSQL schema **`nimbus`** with 13 legacy‑shaped tables (no foreign keys).  
+* Deterministic seed data (500 customers, usage from July‑September 2026).  
+* 8 planted leaks of each of the 8 leak types, plus 2 configuration‑conflict cases.  
+* `ground_truth.json` that lists every planted leak, the affected record IDs and the monetary impact.  
+* An **oracle** (`legacy_sim/oracle.py`) that can automatically verify that the leaks are present and that clean records have no false positives.
+
+### How to run it  
+
+```bash
+# 1. Generate the CSVs and ground‑truth file
+python -m legacy_sim generate --out data/legacy_sim
+
+# 2. Load them into a Postgres instance (replace URL with your DB)
+python -m legacy_sim load --database-url postgresql://user:pass@localhost:5432/legacy-db data/legacy_sim
+
+# 3. See a quick summary
+python -m legacy_sim summary --database-url postgresql://user:pass@localhost:5432/legacy-db
+```
+
+Or use the provided Docker compose profile, which spins up a dedicated `legacy-db` container and runs the whole pipeline in one command:
+
+```bash
+docker compose --profile legacy-sim run --rm legacy-sim
+```
+
+The CI pipeline runs this command automatically as an end‑to‑end test.
+
+### Expected summary output  
+
+```
+CUST_MSTR: 500 rows
+RT_PLAN_CFG: 6 rows
+TRF_RATE_CFG: 18 rows
+DISC_CFG: 4 rows
+CONTRACT_TERMS: 500 rows
+SUBSCR_MSTR: 756 rows
+SUBSCR_DISC: 242 rows
+RENEW_LOG: 99 rows
+USG_CDR: 21957 rows
+RTD_EVT: 21949 rows
+BILL_HDR: 2244 rows
+BILL_DTL: 24684 rows
+PYMT_TXN: 2097 rows
+unrated_usage: 8 leaks, impact 77.33
+rated_not_invoiced: 8 leaks, impact 103.97
+tariff_mismatch: 8 leaks, impact 509.2
+expired_discount: 8 leaks, impact 379.35
+provisioned_not_billed: 8 leaks, impact 4776.0
+missed_renewal: 8 leaks, impact 13083.0
+unmatched_payment: 8 leaks, impact 12000.0
+duplicate_charge: 8 leaks, impact -3992.0
+Overall impact: 26936.85
+```
+
+Use the oracle to validate your detection logic:
+
+```bash
+python -m legacy_sim oracle --database-url postgresql://... data/legacy_sim/ground_truth.json
+```
+
+If the oracle returns “All leaks verified”, your solution matches the ground truth and you’re ready for the next step.  

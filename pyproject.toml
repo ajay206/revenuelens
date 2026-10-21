@@ -27,4 +27,5 @@ target-version = "py312"
 testpaths = ["tests"]
 
 [tool.setuptools]
-packages = ["app"]
+packages = ["app", "legacy_sim"]
+package-data = {"legacy_sim" = ["schema.sql"]}
