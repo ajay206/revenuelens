@@ -4,13 +4,89 @@
 
 {% block head_extra %}
 <style>
-/* Ensure readability compliance */
+/* Story grid layout */
+.story-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .story-grid { grid-template-columns: 1fr; }
+}
+
+/* Cards */
+.card h2.card-title { font-size: 24px; margin: 0 0 12px; color: var(--text); }
+.card h3 { font-size: 18px; margin: 16px 0 8px; color: var(--text); }
+.card p { font-size: 16px; line-height: 1.5; color: var(--text-2); margin: 0; }
+
+/* What to do callout */
+.callout-accent {
+  background: var(--accent-soft);
+  border-left: 4px solid var(--accent);
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+.callout-accent p { color: var(--text); font-weight: 600; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.timeline-item {
+  position: relative;
+  padding-left: 16px;
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: var(--text-2);
+}
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+}
+.timeline-item strong { font-size: 15px; font-weight: 700; color: var(--text); display: inline-block; margin-right: 8px; }
+
+/* Money card */
 .kpi-value { font-size: 38px; font-weight: 700; color: var(--text); }
-.kpi-label { font-size: 15px; color: var(--text-2); margin-top: 4px; }
-.card h2 { font-size: 24px; margin: 0 0 12px; color: var(--text); }
-.card p { font-size: 15px; line-height: 1.5; color: var(--text-2); margin: 0; }
-.timeline-item { font-size: 15px; color: var(--text-2); }
-.timeline-item strong { color: var(--text); }
+.kpi-label { font-size: 15px; color: var(--text-2); }
+.kpi-row { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--border); }
+.kpi-row:first-child { border-top: none; padding-top: 0; }
+.kpi-row .kpi-value { font-size: 16px; font-weight: 700; color: var(--text); }
+
+/* Citation chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 15px;
+  color: var(--text);
+  text-decoration: none;
+}
+.chip svg { width: 12px; height: 12px; flex-shrink: 0; }
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Badge capitalization */
+.badge { text-transform: capitalize; }
 </style>
 {% endblock %}
 
@@ -29,29 +105,31 @@
 {% block page_actions %}
   <span class="badge badge-{{ severity_level|lower }}">{{ severity_level }}</span>
   {% if story.confidence == 'high' %}
-    <span class="badge badge-high">high</span>
+    <span class="badge badge-high">High</span>
   {% else %}
-    <span class="badge badge-low">needs confirmation</span>
+    <span class="badge badge-low">Needs confirmation</span>
   {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="grid-2" style="gap:24px;">
+<div class="story-grid">
   <!-- LEFT COLUMN (2fr) -->
   <div style="display:flex; flex-direction:column; gap:24px;">
     <!-- Summary Card -->
     <div class="card">
-      <h2 class="card-title">What happened</h2>
+      <h3>What happened</h3>
       <p>{{ story.what }}</p>
 
-      <h2 class="card-title" style="margin-top:16px;">Why</h2>
+      <h3>Why</h3>
       <p>{{ story.root_cause }}</p>
 
-      <h2 class="card-title" style="margin-top:16px;">Who is affected</h2>
+      <h3>Who is affected</h3>
       <p>{{ story.who_affected }}</p>
 
-      <h2 class="card-title" style="margin-top:16px;">What to do</h2>
-      <p style="font-weight:600; color:var(--accent);">{{ story.what_to_do }}</p>
+      <h3>What to do</h3>
+      <div class="callout-accent">
+        <p>{{ story.what_to_do }}</p>
+      </div>
     </div>
 
     <!-- Timeline Card -->
@@ -63,17 +141,15 @@
         <div class="timeline-item"><strong>Found by RevenueLens:</strong> {{ story.check }}</div>
         <div class="timeline-item"><strong>Fix:</strong>
           {% if not fix %}
-            <span class="badge badge-draft">drafted</span>
+            No fix drafted yet
+          {% elif fix.status == 'draft' %}
+            Drafted by {{ fix.created_by }}
+          {% elif fix.status == 'approved' %}
+            Approved by {{ fix.decided_by }}
+          {% elif fix.status == 'rejected' %}
+            Rejected by {{ fix.decided_by }}
           {% else %}
-            {% if fix.status == 'draft' %}
-              <span class="badge badge-draft">drafted</span> by {{ fix.decided_by }}
-            {% elif fix.status == 'approved' %}
-              <span class="badge badge-approved">approved</span> by {{ fix.decided_by }}
-            {% elif fix.status == 'rejected' %}
-              <span class="badge badge-rejected">rejected</span> by {{ fix.decided_by }}
-            {% else %}
-              <span class="badge">{{ fix.status }}</span>
-            {% endif %}
+            {{ fix.status|capitalize }}
           {% endif %}
         </div>
       </div>
@@ -82,10 +158,10 @@
     <!-- Sources Card -->
     <div class="card">
       <h2 class="card-title">Sources</h2>
-      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      <div class="chips-wrap">
         {% for c in story.citations %}
           <span class="chip">
-            <svg aria-hidden="true" width="12" height="12" fill="currentColor" style="margin-right:4px;">
+            <svg aria-hidden="true" width="12" height="12" fill="currentColor">
               <use href="#icon-{{ c.type|lower }}"></use>
             </svg>
             {{ c.type }}: {{ c.ref }}
@@ -100,15 +176,19 @@
     <!-- Money Impact Card -->
     <div class="card">
       <h2 class="card-title">Financial impact</h2>
-      <div class="kpi">
-        <div class="kpi-value money" title="{{ inr(story.money_impact) }}">{{ inr_in(story.money_impact) }}</div>
-        <div class="kpi-sub">
-          <div class="kpi-label">Customer</div>
-          <div class="kpi-value">{{ story.customer_id }}</div>
+      <div class="kpi-value money" title="{{ inr(story.money_impact) }}">{{ inr_in(story.money_impact) }}</div>
+      <div style="margin-top:16px;">
+        <div class="kpi-row">
+          <span class="kpi-label">Customer</span>
+          <span class="kpi-value">{{ story.customer_id or finding.customer_id }}</span>
         </div>
-        <div class="kpi-sub">
-          <div class="kpi-label">Records</div>
-          <div class="kpi-value">{{ story.records|default('—') }}</div>
+        <div class="kpi-row">
+          <span class="kpi-label">Records</span>
+          <span class="kpi-value">{{ finding.record_ids|length if finding.record_ids else '—' }}</span>
+        </div>
+        <div class="kpi-row">
+          <span class="kpi-label">Month</span>
+          <span class="kpi-value">{{ period_text }}</span>
         </div>
       </div>
     </div>

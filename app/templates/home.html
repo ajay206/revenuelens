@@ -117,13 +117,13 @@ Latest month: {{ period_label(totals.latest_period) }}
         {% if breakdown %}
         <div class="leaks-by-type">
             {% for b in breakdown %}
-            <div class="leak-type-row" style="display:grid;grid-template-columns:150px auto 80px;align-items:center;margin-bottom:12px;">
-                <div class="type-label" style="font-size:15px;color:var(--text);">{{ b.label }}</div>
-                <div class="type-count" style="font-size:15px;color:var(--text);">{{ b.count }} leaks</div>
+            <div class="leak-type-row" style="display:grid;grid-template-columns:minmax(180px,1.4fr) 80px 2fr 130px;gap:16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);{% if not loop.last %}{% else %}border-bottom:none;{% endif %}">
+                <div class="type-label" style="font-size:16px;color:var(--text);">{{ b.label }}</div>
+                <div class="type-count" style="font-size:15px;color:var(--text-2);">{{ b.count }} leaks</div>
                 <div class="type-bar-track" style="background:var(--accent-soft);height:10px;border-radius:999px;position:relative;">
-                    <div class="type-bar-fill" style="background:var(--accent);height:10px;border-radius:999px;width:{{ (b.amount|abs / max_amount * 100) if max_amount else 0 }}%;"></div>
+                    <div class="type-bar-fill" style="background:var(--accent);height:10px;border-radius:999px;width:{{ b.pct }}%;"></div>
                 </div>
-                <div class="type-amount" style="font-weight:bold;text-align:right;color:var(--text);">{{ inr_in(b.amount) }}</div>
+                <div class="type-amount" style="font-size:16px;font-weight:bold;text-align:right;color:var(--text);">{{ inr_in(b.amount) }}</div>
             </div>
             {% endfor %}
         </div>
@@ -138,11 +138,11 @@ Latest month: {{ period_label(totals.latest_period) }}
 
     <!-- Top leaks -->
     <div class="card">
-        <div class="card-title">
-            Top leaks
-            <form method="get" action="/" style="float:right; margin:0;">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+            <span>Top leaks</span>
+            <form method="get" action="/" style="margin:0;">
                 <label for="type-select" class="sr-only">Filter by leak type</label>
-                <select id="type-select" name="type" class="btn btn-sm" onchange="this.form.submit()">
+                <select id="type-select" name="type" class="btn btn-sm" onchange="this.form.submit()" style="font-size:15px;">
                     <option value="">All</option>
                     {% for t in types %}
                     <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
@@ -152,7 +152,7 @@ Latest month: {{ period_label(totals.latest_period) }}
         </div>
         {% if findings %}
         <div class="table-wrap is-loading">
-            <table class="data-table" data-enhance data-filter-col="1" data-page-size="10">
+            <table class="data-table" data-enhance data-page-size="10">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -168,7 +168,7 @@ Latest month: {{ period_label(totals.latest_period) }}
                     {% for idx, f in findings_index %}
                     <tr>
                         <td><a href="/leaks/{{ idx }}" class="leak-link">{{ idx }}</a></td>
-                        <td>{{ f.check }}</td>
+                        <td>{{ f.check|replace('_', ' ')|title }}</td>
                         <td>{{ f.customer_id or "—" }}</td>
                         <td>{{ period_label(f.period) }}</td>
                         <td class="money" data-value="{{ f.impact|abs }}">{{ inr_in(f.impact) }}</td>
