@@ -54,7 +54,7 @@ fi
 
 # Home page contains expected text
 HOME_CONTENT=$(curl -s -b "$COOKIE_JAR" http://localhost:8000/)
-echo "$HOME_CONTENT" | grep -q "leaking this month" || {
+grep -q "leaking this month" <<<"$HOME_CONTENT" || {
   echo "Home page does not contain expected leak phrase."
   exit 1
 }
