@@ -10,14 +10,15 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import dataclass, field, asdict
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, List, Mapping, Sequence
+from typing import Any
 
-from app.llm import LLM, free_llm_from_env, parse_json
-from app.reconcile import Finding, run_checks
 from app.discovery import discover
+from app.llm import LLM, free_llm_from_env, parse_json
 from app.mapping import map_schema
+from app.reconcile import Finding, run_checks
 from legacy_sim.generator import generate  # type: ignore[import]
 
 # ---------------------------------------------------------------------------
@@ -36,7 +37,7 @@ class Story:
     money_impact: float  # INR, positive = revenue lost
     who_affected: str
     what_to_do: str
-    citations: List[dict] = field(default_factory=list)  # {"type": "...", "ref": "..."}
+    citations: list[dict] = field(default_factory=list)  # {"type": "...", "ref": "..."}
     confidence: str = "needs confirmation"  # "high" or "needs confirmation"
 
 
@@ -56,7 +57,7 @@ _CHECK_TO_TICKET_KEY: Mapping[str, str] = {
 }
 
 
-def match_tickets(finding: Finding, tickets: Sequence[Mapping[str, Any]]) -> List[dict]:
+def match_tickets(finding: Finding, tickets: Sequence[Mapping[str, Any]]) -> list[dict]:
     """Return up to three tickets whose label or title matches the check.
 
     The mapping in ``_CHECK_TO_TICKET_KEY`` defines a keyword for each check.
@@ -67,7 +68,7 @@ def match_tickets(finding: Finding, tickets: Sequence[Mapping[str, Any]]) -> Lis
     if not keyword:
         return []
 
-    matched: List[dict] = []
+    matched: list[dict] = []
     lowered = keyword.lower()
     for ticket in tickets:
         # Normalise ticket fields
@@ -116,7 +117,7 @@ def explain_finding(finding: Finding, tickets: Sequence[Mapping[str, Any]], llm:
     money_impact = round(abs(finding.impact), 2)
 
     # citations for each record id
-    citations: List[dict] = [
+    citations: list[dict] = [
         {"type": "record", "ref": f"{finding.table}:{rid}"} for rid in finding.record_ids
     ]
 
@@ -180,9 +181,9 @@ def explain_all(
     tickets: Sequence[Mapping[str, Any]],
     llm: LLM,
     limit: int | None = None,
-) -> List[Story]:
+) -> list[Story]:
     """Explain a collection of findings, optionally limiting the number processed."""
-    stories: List[Story] = []
+    stories: list[Story] = []
     for idx, f in enumerate(findings):
         if limit is not None and idx >= limit:
             break
@@ -196,7 +197,7 @@ def explain_all(
 
 def to_markdown(stories: Sequence[Story]) -> str:
     """Render a list of stories as markdown."""
-    lines: List[str] = []
+    lines: list[str] = []
     for s in stories:
         lines.append(f"## {s.title}")
         lines.append("")
@@ -226,14 +227,14 @@ def to_markdown(stories: Sequence[Story]) -> str:
 # CLI entry point
 # ---------------------------------------------------------------------------
 
-def _load_tickets() -> List[dict]:
+def _load_tickets() -> list[dict]:
     """Generate a deterministic set of tickets from the legacy simulator."""
     # The simulator returns an object with a ``tickets`` attribute.
     sim = generate(seed=42, n_customers=500)  # type: ignore[arg-type]
     return getattr(sim, "tickets", [])
 
 
-def main(argv: List[str] | None = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     """CLI for step 5.
 
     Usage:

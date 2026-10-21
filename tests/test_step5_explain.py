@@ -4,16 +4,13 @@ from __future__ import annotations
 
 import json
 import os
-import sys
-from pathlib import Path
 
 import pytest
 
 from app.explain import (
-    Story,
-    match_tickets,
-    explain_finding,
     explain_all,
+    explain_finding,
+    match_tickets,
     to_markdown,
 )
 from app.llm import FakeLLM
@@ -66,6 +63,9 @@ _SAMPLE_TICKETS = [
     },
 ]
 
+# expose a lowercase alias expected by the test suite
+_sample_tickets = _SAMPLE_TICKETS
+
 def _make_finding(check: str) -> Finding:
     return Finding(
         check=check,
@@ -98,7 +98,9 @@ def _make_finding(check: str) -> Finding:
 def test_match_tickets_maps_correctly(check: str, expected_key: str):
     f = _make_finding(check)
     matches = match_tickets(f, _sample_tickets)
-    assert any(expected_key in (t["title"].lower() + " " + " ".join(t["labels"])) for t in matches)
+    assert any(
+        expected_key in (t["title"].lower() + " " + " ".join(t["labels"])) for t in matches
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -134,6 +136,7 @@ def test_explain_finding_happy_path():
     assert story.what == "Usage records without rating."
     assert story.confidence == "high"
 
+
 # ---------------------------------------------------------------------------
 # explain_finding – LLM returns garbage
 # ---------------------------------------------------------------------------
@@ -148,6 +151,7 @@ def test_explain_finding_fallback_on_garbage():
     assert story.confidence == "needs confirmation"
     # money impact still deterministic
     assert story.money_impact == 1500.75
+
 
 # ---------------------------------------------------------------------------
 # Money impact must stay deterministic even if LLM tries to override
@@ -217,7 +221,7 @@ def db_url() -> str | None:
 
         with psycopg.connect(url) as conn:
             conn.close()
-    except Exception:
+    except Exception:  # noqa: BLE001
         pytest.skip("Database not reachable")
     return url
 
