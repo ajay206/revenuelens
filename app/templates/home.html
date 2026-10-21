@@ -36,7 +36,7 @@ Latest month: {{ period_label(totals.latest_period) }}
 
 {% block content %}
 <div class="kpi-grid">
-    <div class="kpi card">
+    <div class="kpi card" role="group" aria-label="{{ inr_in(totals.month_total) }} leaking this month">
         <div class="kpi-label">Leaking this month</div>
         <div class="kpi-value money">{{ inr_in(totals.month_total) }}</div>
         <div class="kpi-sub text-muted">in {{ period_label(totals.latest_period) }}</div>
