@@ -1,26 +1,23 @@
-import os
+from collections.abc import Generator
 from contextlib import contextmanager
 
 import psycopg
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://revenuelens:revenuelens@localhost:5432/revenuelens",
-)
+from .config import get_settings
 
 
 def get_conn() -> psycopg.Connection:
     """Return a new psycopg (v3) connection using the configured DATABASE_URL."""
-    return psycopg.connect(DATABASE_URL)
+    return psycopg.connect(get_settings().database_url)
 
 
 @contextmanager
-def tenant_conn(tenant_id: str):
-    """Context manager that sets the RLS tenant context for the duration of the connection.
-
-    Uses ``set_config('app.tenant_id', %s, false)`` so that all subsequent
-    queries within the same transaction/tenant context are correctly scoped
-    by the Row Level Security policies defined in the schema.
+def tenant_conn(tenant_id: str) -> Generator[psycopg.Connection, None, None]:
+    """
+    Context manager that sets the RLS tenant context for the duration of the
+    connection. Uses ``set_config('app.tenant_id', %s, false)`` so that all
+    subsequent queries within the same transaction/tenant context are correctly
+    scoped by the Row Level Security policies defined in the schema.
     """
     conn = get_conn()
     try:
@@ -36,3 +33,9 @@ def tenant_conn(tenant_id: str):
         raise
     finally:
         conn.close()
+
+
+def company_conn() -> Generator[psycopg.Connection, None, None]:
+    """Convenience wrapper that uses the tenant_id from settings (the company)."""
+    settings = get_settings()
+    return tenant_conn(settings.company_id)

@@ -110,3 +110,29 @@ Leak detection precision/recall, bill-replay match rate, onboarding time, money 
 ## 10. Why it can compete
 Incumbent RA vendors are slow, costly and opaque. RevenueLens is fast to connect, explains every finding,
 charges on results, and the same engine works beyond telecom.
+
+## Deployment model
+
+RevenueLens Step 1 adopts a **single‑stack‑per‑company** deployment model.
+
+* **Docker Compose project name** – `rl-<company‑slug>` (e.g., `rl-acme`). This isolates Docker resources (networks, containers, volumes) per company.
+* **PostgreSQL** – Each stack runs its own PostgreSQL container with a dedicated Docker volume. No host port is exposed; the API container talks to the database over a private internal network.
+* **Secrets** – All environment variables required by the stack live in `deployments/<company‑slug>/.env`. The file is git‑ignored and created with `chmod 600` by `scripts/new-company.sh`. It contains:
+  * `POSTGRES_PASSWORD` – random, per‑stack password.
+  * `JWT_SECRET` – random secret used to sign JWTs for this company.
+  * `COMPANY_ID` – immutable identifier for the tenant.
+  * `ADMIN_EMAIL` / `ADMIN_PASSWORD` – credentials for the first admin user.
+  * `API_PORT` – a unique port starting from 8100, bound to `127.0.0.1`.
+* **Startup script** – `scripts/new-company.sh <slug> [name]`:
+  1. Generates the `.env` file with the values above.
+  2. Optionally skips bringing the stack up (`SKIP_UP=1`) so the file can be inspected.
+  3. Executes `docker compose -p rl-<slug> --env-file deployments/<slug>/.env up -d --build`.
+* **Application behavior** – The API reads `COMPANY_ID` and `JWT_SECRET` from its environment. Every request sets the PostgreSQL session variable `app.tenant_id` to the same `COMPANY_ID`. Row‑Level Security policies then guarantee that only rows belonging to that tenant are visible, even if the database were accessed directly.
+
+**Benefits**
+
+* **Strong isolation** – Data, network, and secrets are separated at the container level; a compromised stack cannot reach another company’s database.
+* **Defense in depth** – RLS provides an additional safeguard inside PostgreSQL, ensuring that even a privileged DB user cannot bypass tenant filtering.
+* **Operational simplicity** – One compose file, one migration set, and one seed script serve all stacks. Backups, scaling, and monitoring can be applied per‑stack without affecting others.
+
+This model will serve as the baseline for later steps, where additional services (AI inference, analytics, UI) can be added to each stack without changing the fundamental isolation guarantees.  

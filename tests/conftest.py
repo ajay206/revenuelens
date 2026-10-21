@@ -1,7 +1,19 @@
 import os
 
-import psycopg
 import pytest
+from fastapi.testclient import TestClient
+
+from app import seed
+from app.main import app
+
+# Set default environment variables for the test suite
+os.environ.setdefault("COMPANY_ID", "11111111-1111-1111-1111-111111111111")
+os.environ.setdefault("COMPANY_NAME", "Acme Test")
+os.environ.setdefault("JWT_SECRET", "test-secret-a")
+os.environ.setdefault("ADMIN_EMAIL", "admin@acme.test")
+os.environ.setdefault("ADMIN_PASSWORD", "s3cret-pass")
+
+import psycopg
 
 from app.migrate import main as run_migrations
 
@@ -22,3 +34,15 @@ def db():
     yield conn
 
     conn.close()
+
+
+@pytest.fixture(scope="session")
+def seeded(db):
+    # Run the seed script to ensure tenant and admin user exist
+    seed.main()
+    return db
+
+
+@pytest.fixture
+def client():
+    return TestClient(app)
