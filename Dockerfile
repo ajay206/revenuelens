@@ -1,19 +1,31 @@
 FROM python:3.12-slim
 
-# Create a non‑root user
-RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /usr/sbin/nologin appuser
+# ---- create non‑root user ----
+RUN groupadd -r appuser && \\
+    useradd -r -g appuser -d /app -s /usr/sbin/nologin appuser
 
+# ---- set workdir ----
 WORKDIR /app
 
-# Install system dependencies (if any) and Python packages
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# ---- copy only build‑time files ----
+COPY pyproject.toml README.md ./
+COPY app/ ./app/
+COPY migrations/ ./migrations/
 
-# Copy application code
-COPY . .
+# ---- install the package (editable not needed) ----
+RUN pip install --no-cache-dir .
 
-# Switch to non‑root user
+# ---- adjust ownership ----
+RUN chown -R appuser:appuser /app
+
+# ---- runtime user ----
 USER appuser
 
-# Run migrations, seeding and start the API
+# ---- expose port ----
+EXPOSE 8000
+
+# ---- ensure the source root is on PYTHONPATH ----
+ENV PYTHONPATH=/app
+
+# ---- entrypoint ----
 CMD ["sh", "-c", "python -m app.migrate && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
