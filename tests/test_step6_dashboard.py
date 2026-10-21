@@ -1,11 +1,11 @@
 import os
 
 import pytest
-from app.reconcile import Finding
 from fastapi.testclient import TestClient
 
 from app import dashboard
 from app.main import app
+from app.reconcile import Finding
 from app.security import create_token
 
 
@@ -16,6 +16,11 @@ def inr(value: float) -> str:
 # --------------------------------------------------------------------------- #
 # Fixtures
 # --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="module", autouse=True)
+def set_fake_llm():
+    os.environ["RL_LLM"] = "fake"
 
 
 @pytest.fixture(scope="module")
@@ -32,7 +37,6 @@ def sim_loaded(db_url):
 
     sim_main(["load", "--database-url", db_url])
     os.environ["LEGACY_DATABASE_URL"] = db_url
-    os.environ["RL_LLM"] = "fake"
     dashboard.reset_cache()
 
 
@@ -56,7 +60,7 @@ def seeded():
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(sim_loaded, seeded):
     with TestClient(app) as c:
         yield c
 
@@ -86,7 +90,7 @@ def test_compute_totals_unit():
 
 
 def test_inr_unit():
-    assert dashboard.inr(1234567.89) == "₹1,23,4567.89"
+    assert dashboard.inr(1234567.89) == "₹1,234,567.89"
 
 
 # --------------------------------------------------------------------------- #
@@ -94,9 +98,14 @@ def test_inr_unit():
 # --------------------------------------------------------------------------- #
 
 
-@pytest.fixture()
-def require_db(sim_loaded, seeded):
-    return True
+def _login(client: TestClient) -> None:
+    r = client.post(
+        "/login",
+        data={"email": "admin@acme.test", "password": "s3cret-pass"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert r.cookies.get("rl_token")
 
 
 def test_get_root_without_login(client):
@@ -113,22 +122,18 @@ def test_api_findings_no_auth(client):
 def test_post_login_wrong_password(client):
     r = client.post("/login", data={"email": "admin@acme.test", "password": "wrong"}, follow_redirects=False)
     assert r.status_code == 401
+    assert "Wrong email or password" in r.text
 
 
 def test_login_and_access_dashboard(client):
-    r = client.post(
-        "/login",
-        data={"email": "admin@acme.test", "password": "s3cret-pass"},
-        follow_redirects=False,
-    )
-    assert r.status_code == 303
-    assert r.cookies.get("rl_token")
+    _login(client)
     r2 = client.get("/", follow_redirects=True)
     assert r2.status_code == 200
-    assert "leaking this month" in r2.text
+    assert "leaking this month" in r2.text.lower()
 
 
 def test_summary_matches_findings(client):
+    _login(client)
     r = client.get("/api/findings")
     assert r.status_code == 200
     findings_data = r.json()
@@ -139,13 +144,16 @@ def test_summary_matches_findings(client):
 
 
 def test_home_shows_inr(client):
+    _login(client)
     r = client.get("/")
     assert r.status_code == 200
-    expected = inr(round(sum(abs(f["impact"]) for f in client.get("/api/findings").json()), 2))
+    findings_data = client.get("/api/findings").json()
+    expected = inr(round(sum(abs(f["impact"]) for f in findings_data), 2))
     assert expected in r.text
 
 
 def test_story_page_sources(client):
+    _login(client)
     story = client.get("/api/stories/0").json()
     page = client.get("/leaks/0")
     assert page.status_code == 200
@@ -155,6 +163,7 @@ def test_story_page_sources(client):
 
 
 def test_type_filter(client):
+    _login(client)
     all_findings = client.get("/api/findings").json()
     if not all_findings:
         pytest.skip("No findings")
@@ -164,5 +173,6 @@ def test_type_filter(client):
 
 
 def test_leak_404(client):
+    _login(client)
     r = client.get("/leaks/9999")
     assert r.status_code == 404

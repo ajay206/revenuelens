@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
 
 import jwt
 from fastapi import (
     APIRouter,
-    Depends,
     Form,
     HTTPException,
     Request,
@@ -27,8 +27,9 @@ from .security import decode_token
 
 router = APIRouter()
 
+TEMPLATES_DIR = Path(__file__).parent / "templates"
 templates = Environment(
-    loader=FileSystemLoader("templates"),
+    loader=FileSystemLoader(str(TEMPLATES_DIR)),
     autoescape=select_autoescape(["html", "xml"]),
 )
 
@@ -107,8 +108,8 @@ def compute_totals(findings: list[Finding]) -> dict[str, Any]:
     else:
         month_total = found_total
     return {
-        "month_total": month_total,
         "found_total": found_total,
+        "month_total": month_total,
         "latest_period": latest_period,
         "count": len(findings),
     }
@@ -127,21 +128,27 @@ def _build_credentials(token: str) -> HTTPAuthorizationCredentials:
     return HTTPAuthorizationCredentials(scheme="bearer", credentials=token)
 
 
-def dashboard_user(request: Request) -> dict:
+def _get_token_from_request(request: Request) -> str | None:
     token = request.cookies.get("rl_token")
     if not token:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             token = auth_header[7:]
-    if not token:
-        from app.auth import get_current_user  # noqa: WPS433
+    return token
 
+
+def dashboard_user(request: Request) -> dict:
+    token = _get_token_from_request(request)
+    if not token:
+        if _is_html(request):
+            raise HTTPException(status_code=303, detail="Not authenticated", headers={"Location": "/login"})
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
         decode_token(token)
     except jwt.InvalidTokenError as exc:
+        if _is_html(request):
+            raise HTTPException(status_code=303, detail="Invalid token", headers={"Location": "/login"})
         raise HTTPException(status_code=401, detail="Invalid token") from exc
-    # Verify user exists by reusing the same logic as app.auth.get_current_user
     from app.auth import get_current_user  # noqa: WPS433
 
     credentials = _build_credentials(token)
@@ -175,7 +182,10 @@ def login_post(
         result = login(LoginRequest(email=email, password=password))
         token = result.access_token
     except HTTPException:
-        return render_template("login.html", error="Wrong email or password"), 401
+        return HTMLResponse(
+            content=render_template("login.html", error="Wrong email or password"),
+            status_code=401,
+        )
 
     response = RedirectResponse(url="/", status_code=303)
     response.set_cookie(
@@ -209,7 +219,6 @@ def home(request: Request, type: str | None = None):
 
     top = filtered[:20]
     totals = compute_totals(findings)
-    totals = compute_totals(findings)
     settings = get_settings()
 
     return render_template(
@@ -226,11 +235,7 @@ def home(request: Request, type: str | None = None):
 
 @router.get("/leaks/{leak_id:int}", response_class=HTMLResponse)
 def leak_story(request: Request, leak_id: int):
-    if _is_html(request):
-        user = dashboard_user(request)
-    else:
-        user = True  # api path doesn't require auth
-
+    user = dashboard_user(request)
     findings = load_findings()
     stories = load_stories()
 
@@ -252,8 +257,8 @@ def leak_story(request: Request, leak_id: int):
 
 
 @router.get("/api/findings")
-def api_findings(type: str | None = None):
-    dashboard_user_from_request(None)
+def api_findings(request: Request, type: str | None = None):
+    dashboard_user(request)
     findings = load_findings()
     if type:
         findings = [f for f in findings if f.check == type]
@@ -273,15 +278,9 @@ def api_findings(type: str | None = None):
     ]
 
 
-def dashboard_user_from_request(request: Request | None) -> dict:
-    """Wrapper used by API routes to enforce auth."""
-
-    return Depends(dashboard_user)
-
-
 @router.get("/api/stories")
-def api_stories(type: str | None = None):
-    _require_auth()
+def api_stories(request: Request, type: str | None = None):
+    dashboard_user(request)
     stories = load_stories()
     if type:
         stories = [s for s in stories if s.check == type]
@@ -305,8 +304,8 @@ def api_stories(type: str | None = None):
 
 
 @router.get("/api/stories/{story_id:int}")
-def api_story(story_id: int):
-    _require_auth()
+def api_story(request: Request, story_id: int):
+    dashboard_user(request)
     stories = load_stories()
     if story_id < 0 or story_id >= len(stories):
         raise HTTPException(status_code=404, detail="Story not found")
@@ -328,8 +327,8 @@ def api_story(story_id: int):
 
 
 @router.get("/api/summary")
-def api_summary():
-    _require_auth()
+def api_summary(request: Request):
+    dashboard_user(request)
     findings = load_findings()
     totals = compute_totals(findings)
     per_type_money: dict[str, float] = {}
@@ -342,8 +341,3 @@ def api_summary():
         for t in sorted(per_type_money)
     }
     return totals
-
-
-def _require_auth() -> None:
-    """Raise 401 unconditionally for API-only calls not routed through dashboard_user."""
-    raise HTTPException(status_code=401, detail="Not authenticated")

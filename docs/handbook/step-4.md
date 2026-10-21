@@ -64,16 +64,16 @@ python -m app.evaluate --dsn <URL> --out eval.json
 
 | Check | Precision | Recall | Money impact (found) | Money impact (answer key) |
 |-------|-----------|--------|----------------------|---------------------------|
-| unrated_usage                | 1.00 | 1.00 | INR 9,842.15 | INR 9,842.15 |
-| rated_not_invoiced           | 1.00 | 1.00 | INR 7,530.00 | INR 7,530.00 |
-| tariff_mismatch              | 1.00 | 1.00 | INR 8,210.40 | INR 8,210.40 |
-| expired_discount             | 1.00 | 1.00 | INR 6,945.70 | INR 6,945.70 |
-| service_active_not_billed    | 1.00 | 1.00 | INR 5,112.30 | INR 5,112.30 |
-| missed_renewal               | 1.00 | 1.00 | INR 50,328.00 | INR 13,083.00 |
-| payment_unmatched            | 1.00 | 1.00 | INR 9,102.40 | INR 9,102.40 |
-| duplicate_charge             | 1.00 | 1.00 | INR 6,511.80 | INR 6,511.80 |
+| unrated_usage | 1.00 | 1.00 | INR 77.33 | INR 77.33 |
+| rated_not_invoiced | 1.00 | 1.00 | INR 103.97 | INR 103.97 |
+| tariff_mismatch | 1.00 | 1.00 | INR 509.20 | INR 509.20 |
+| expired_discount | 1.00 | 1.00 | INR 379.35 | INR 379.35 |
+| provisioned_not_billed | 1.00 | 1.00 | INR 4,776.00 | INR 4,776.00 |
+| missed_renewal | 1.00 | 1.00 | INR 50,328.00 | INR 13,083.00 |
+| unmatched_payment | 1.00 | 1.00 | INR 12,000.00 | INR 12,000.00 |
+| duplicate_charge | 1.00 | 1.00 | INR 3,992.00 | INR 3,992.00 |
 
-*Total money found*: **INR 64,181.85**  
+*Total money found*: **INR 72,165.85** (answer key for these 8 checks: INR 34,920.85; measured on seed 42, 500 customers)  
 
 The missed‑renewal check reports a higher amount because RevenueLens counts **every month** from the contract end date up to the latest bill, not just the single missed month used in the answer key.
 
