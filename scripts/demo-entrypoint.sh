@@ -19,8 +19,13 @@ done
 python -m app.migrate
 python -m app.seed
 
-# Load synthetic Nimbus data into the legacy DB
-python -m legacy_sim load --database-url "$LEGACY_DATABASE_URL"
+# Pick the demo seed: reuse the stored one on restart, else DEMO_SEED, else random
+export LEGACY_DATABASE_URL="${LEGACY_DATABASE_URL:-$DATABASE_URL}"
+SEED=$(python -m app.demo_pipeline seed)
+echo "Demo seed: ${SEED} (set DEMO_SEED=${SEED} to reproduce this exact data set)"
+
+# Load randomized synthetic Nimbus data (with planted leaks) into the legacy DB
+python -m legacy_sim load --database-url "$LEGACY_DATABASE_URL" --seed "$SEED" --randomize
 
 # Choose LLM implementation
 if [[ -z "${GROQ_API_KEY:-}" && -z "${OPENROUTER_API_KEY:-}" && -z "${GEMINI_API_KEY:-}" ]]; then
@@ -28,14 +33,12 @@ if [[ -z "${GROQ_API_KEY:-}" && -z "${OPENROUTER_API_KEY:-}" && -z "${GEMINI_API
   echo "No LLM API key provided – using fake LLM implementation."
 fi
 
-# Run explain once to generate a story (ignore failures)
-python -m app.explain \
-  --database-url "$LEGACY_DATABASE_URL" \
-  --schema nimbus \
-  --out /tmp/stories.md || echo "Explainer failed, continuing."
+# Detect leaks, explain them, draft sample fixes/audit/report entries and grade against the answer key
+python -m app.demo_pipeline run --seed "$SEED" --ground-truth-out /tmp/ground_truth.json \
+  || echo "Demo pipeline failed, continuing."
 
 # Show demo URL and credentials
-DEMO_URL="http://localhost:${DEMO_PORT:-8000}"
+DEMO_URL="http://localhost:${DEMO_PORT:-8765}"
 cat <<EOF
 
 ============================================================

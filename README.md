@@ -9,7 +9,7 @@ curl -O https://raw.githubusercontent.com/ajay206/revenuelens/main/docker-compos
 docker compose -f docker-compose.demo.yml up
 ```
 
-Open your browser to **http://localhost:8000**.
+Open your browser to **http://localhost:8765** (change it with `DEMO_PORT=9123`).
 
 ### Demo credentials (synthetic demo‑only)
 
@@ -18,6 +18,75 @@ Open your browser to **http://localhost:8000**.
 | demo@revenuelens.local    | revenuelens-demo  |
 
 These credentials are **synthetic** and only work for the demo environment.
+
+### Every run plants different issues
+
+- Each fresh start of the demo (i.e. when the database volume is newly created) generates a **random seed** and plants a random mix of leaks:
+  - Between **4‑8** of the eight check types are selected.
+  - For each selected type, **1‑8** instances are created on randomly chosen customers.
+- The seed used for that run is printed in the container logs, e.g. `Demo seed: 123456`.
+- You can reproduce a specific run by overriding the seed:
+
+  ```bash
+  DEMO_SEED=123456 docker compose -f docker-compose.demo.yml up
+  ```
+
+- Restarting the same stack (without tearing down the volume) keeps the same data and therefore the same planted issues.
+- To start with a completely fresh demo (new random mix) run:
+
+  ```bash
+  docker compose -f docker-compose.demo.yml down -v   # removes the volume
+  docker compose -f docker-compose.demo.yml up
+  ```
+
+- **Planted issues page** – a new UI page at **/planted** lists every planted issue, its status (Matched / Missed) and links back to the corresponding leak.
+- **Answer‑key API** – `GET /api/answer-key` returns the seed, all planted issues with their match status, false‑positives, per‑check counts, precision and recall.  
+  The detection logic never reads this answer key; it is stored only for grading.
+
+### What's pre‑loaded
+
+- **Draft fixes** – 8 draft fixes are created on the first run (2 approved, 1 rejected, the rest pending).
+- **Audit entries** – the audit log contains entries such as `demo_seeded`, `draft_created`, `fix_approved`, `fix_rejected`, and `report_generated`.
+- **Reports page** – “Recently generated reports” shows the CSV/PDF reports generated during the demo. Downloading a report now logs a `report_generated` audit entry.
+- **New logo** – a lens with an upward line appears in the sidebar, on the login page, and as the favicon (`/favicon.svg`).
+
+### Pulling the image
+
+- The demo image is hosted at **ghcr.io/ajay206/revenuelens**.  
+  The package **must be set to Public** in GitHub Package settings for anonymous pulls.  
+  If it is private, authenticate first:
+
+  ```bash
+  docker login ghcr.io
+  ```
+
+- The image is multi‑arch (`linux/amd64` + `linux/arm64`), so Apple Silicon Macs can run it natively once the new image is published.
+
+### Use a different port
+
+The demo now runs on port **8765** by default.
+
+```bash
+docker compose -f docker-compose.demo.yml up
+# then open http://localhost:8765
+```
+
+To override the port:
+
+```bash
+DEMO_PORT=9123 docker compose -f docker-compose.demo.yml up
+```
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `port already allocated` / `address already in use` | Port 8765 is occupied | Run with a different port: `DEMO_PORT=9123 docker compose -f docker-compose.demo.yml up` |
+| `no matching manifest for linux/arm64` | Using an older image that lacks arm64 support | Pull the amd64 image explicitly: `DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose -f docker-compose.demo.yml up` |
+| `image ... does not provide the specified platform (linux/amd64)` | Docker is trying to run an image without the requested platform | Pull the required base image first: `docker pull --platform linux/amd64 postgres:16` then retry |
+| Need to reset the demo state | Stale data or you want a new random seed | `docker compose -f docker-compose.demo.yml down -v` then `docker compose -f docker-compose.demo.yml up` |
+| `denied` / `unauthorized` pulling the image | The GitHub package is private or you are not logged in | Make the package public in GitHub or run `docker login ghcr.io` before pulling |
+
 
 > **Note:** All data is synthetic – Nimbus Telecom, ~500 customers, with planted billing leaks. No real customer data is used.
 

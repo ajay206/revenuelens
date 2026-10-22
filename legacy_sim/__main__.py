@@ -78,7 +78,7 @@ def _copy_table(
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
-    ds: Dataset = generate(seed=args.seed, n_customers=args.customers)
+    ds: Dataset = generate(seed=args.seed, n_customers=args.customers, randomize=getattr(args, "randomize", False))
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -101,7 +101,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
 
 def cmd_load(args: argparse.Namespace) -> int:
-    ds: Dataset = generate(seed=args.seed, n_customers=args.customers)
+    ds: Dataset = generate(seed=args.seed, n_customers=args.customers, randomize=getattr(args, "randomize", False))
     db_url = args.database_url or os.getenv("LEGACY_DATABASE_URL") or os.getenv(
         "DATABASE_URL"
     )
@@ -137,7 +137,7 @@ def cmd_load(args: argparse.Namespace) -> int:
 
 
 def cmd_summary(args: argparse.Namespace) -> int:
-    ds: Dataset = generate(seed=args.seed, n_customers=args.customers)
+    ds: Dataset = generate(seed=args.seed, n_customers=args.customers, randomize=getattr(args, "randomize", False))
     # Row counts
     for tbl, rows in ds.tables.items():
         print(f"{tbl}: {len(rows)} rows")
@@ -161,6 +161,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="cmd", required=True)
 
     gen = subparsers.add_parser("generate", help="Generate synthetic data")
+    gen.add_argument("--randomize", action="store_true", help="Randomise which leaks are planted")
     gen.add_argument("--seed", type=int, default=42, help="Random seed")
     gen.add_argument(
         "--customers", type=int, default=500, help="Number of customers to generate"
@@ -171,6 +172,7 @@ def build_parser() -> argparse.ArgumentParser:
     gen.set_defaults(func=cmd_generate)
 
     load = subparsers.add_parser("load", help="Load data into PostgreSQL")
+    load.add_argument("--randomize", action="store_true", help="Randomise which leaks are planted")
     load.add_argument("--seed", type=int, default=42)
     load.add_argument(
         "--customers", type=int, default=500, help="Number of customers to generate"
@@ -184,6 +186,7 @@ def build_parser() -> argparse.ArgumentParser:
     load.set_defaults(func=cmd_load)
 
     summ = subparsers.add_parser("summary", help="Print a quick summary")
+    summ.add_argument("--randomize", action="store_true", help="Randomise which leaks are planted")
     summ.add_argument("--seed", type=int, default=42)
     summ.add_argument("--customers", type=int, default=500)
     summ.set_defaults(func=cmd_summary)

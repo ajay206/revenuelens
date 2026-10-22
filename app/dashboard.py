@@ -401,30 +401,28 @@ def login_form(request: Request):
 
 
 @router.post("/login", response_class=HTMLResponse)
-def login_post(
-    request: Request,
-    email: str = Form(...),
-    password: str = Form(...),
-):
-    from app.auth import LoginRequest, login
-
+def login_post(request: Request, email: str = Form(default=""), password: str = Form(default="")):
+    if not email.strip() or not password:
+        return HTMLResponse(
+            render_template("login.html", error="Enter your email and password.", email=email),
+            status_code=422
+        )
     try:
-        result = login(LoginRequest(email=email, password=password))
-        token = result.access_token
+        from app.auth import LoginRequest, login
+        result = login(LoginRequest(email=email.strip(), password=password))
     except HTTPException:
         return HTMLResponse(
-            content=render_template("login.html", error="Wrong email or password"),
-            status_code=401,
+            render_template("login.html", error="Wrong email or password.", email=email),
+            status_code=401
         )
-
-    response = RedirectResponse(url="/", status_code=303)
-    response.set_cookie(
-        "rl_token",
-        token,
-        httponly=True,
-        samesite="lax",
-    )
-    return response
+    except Exception:  # noqa: BLE001
+        return HTMLResponse(
+            render_template("login.html", error="Something went wrong on our side. Please try again.", email=email),
+            status_code=500
+        )
+    resp = RedirectResponse("/", status_code=303)
+    resp.set_cookie("rl_token", result.access_token, httponly=True, samesite="lax")
+    return resp
 
 
 @router.get("/logout", response_class=HTMLResponse)

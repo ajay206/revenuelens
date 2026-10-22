@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% block title %}Planted issues – RevenueLens{% endblock %}{% block breadcrumbs %}<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span aria-hidden="true">/</span> <span aria-current="page">Planted issues</span></nav>{% endblock %}{% block page_title %}Planted issues <span class="chip" style="margin-left:8px">Demo only</span>{% endblock %}{% block page_subtitle %}Answer key for the current demo seed. RevenueLens never reads this during detection; it is only used here to grade the results.{% endblock %}{% block page_actions %}{% endblock %}{% block content %}
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px">
+  <div class="card" style="padding:16px"><div class="text-muted" style="font-size:12px">Seed</div><div style="font-size:24px;font-weight:600">{{ report.seed if report.seed is not none else "—" }}</div></div>
+  <div class="card" style="padding:16px"><div class="text-muted" style="font-size:12px">Planted</div><div style="font-size:24px;font-weight:600">{{ report.planted }}</div></div>
+  <div class="card" style="padding:16px"><div class="text-muted" style="font-size:12px">Detected</div><div style="font-size:24px;font-weight:600">{{ report.detected }}</div></div>
+  <div class="card" style="padding:16px"><div class="text-muted" style="font-size:12px">Missed</div><div style="font-size:24px;font-weight:600">{{ report.missed }}</div></div>
+  <div class="card" style="padding:16px"><div class="text-muted" style="font-size:12px">False positives</div><div style="font-size:24px;font-weight:600">{{ report.false_positives|length }}</div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px">
+  <div class="card" style="padding:16px"><div class="text-muted" style="font-size:12px">Precision</div><div style="font-size:24px;font-weight:600">{{ (report.precision * 100)|round(1) }}%</div></div>
+  <div class="card" style="padding:16px"><div class="text-muted" style="font-size:12px">Recall</div><div style="font-size:24px;font-weight:600">{{ (report.recall * 100)|round(1) }}%</div></div>
+</div>
+
+<h3 style="margin:0 0 12px">Per-check summary</h3>
+<div class="table-wrap"><table class="data-table" data-enhance data-page-size="25"><thead><tr><th>Check</th><th>Planted</th><th>Detected</th><th>Missed</th><th>False positives</th></tr></thead><tbody>
+{% for check in report.per_check %}
+<tr>
+  <td>{{ check }}</td>
+  <td>{{ report.per_check[check].planted }}</td>
+  <td>{{ report.per_check[check].detected }}</td>
+  <td>{{ report.per_check[check].missed }}</td>
+  <td>{{ report.per_check[check].false_positives }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+
+<h3 style="margin:32px 0 12px">Planted issues</h3>
+{% if report.planted == 0 and report.seed is none %}
+<div class="empty-state">No answer key — run the demo with randomized data.</div>
+{% else %}
+<div class="table-wrap"><table class="data-table" data-enhance data-page-size="25"><thead><tr><th>Leak ID</th><th>Check</th><th>Customer</th><th>Bill period</th><th>Impact INR</th><th>Description</th><th>Status</th></tr></thead><tbody>
+{% for issue in report.issues %}
+<tr>
+  <td>{{ issue.leak_id }}</td>
+  <td>{{ issue.check_name }}</td>
+  <td>{{ issue.cust_no }}</td>
+  <td>{{ issue.bill_prd or '—' }}</td>
+  <td style="text-align:right">{{ "%.2f"|format(issue.impact_inr) }}</td>
+  <td>{{ issue.description }}</td>
+  <td>
+    {% if issue.detected %}
+    <span class="badge" style="background:#16a34a;color:#fff">Matched</span>
+    {% if issue.finding_index is not none %}
+    <a href="/leaks/{{ issue.finding_index }}" class="btn btn-secondary btn-sm" style="margin-top:4px;display:inline-block">View leak</a>
+    {% endif %}
+    {% else %}
+    <span class="badge" style="background:#dc2626;color:#fff">Missed</span>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% endif %}
+
+<h3 style="margin:32px 0 12px">False positives</h3>
+{% if report.false_positives %}
+<div class="table-wrap"><table class="data-table" data-enhance data-page-size="25"><thead><tr><th>Index</th><th>Check</th><th>Customer</th><th>Record IDs</th><th>Impact</th><th>Description</th></tr></thead><tbody>
+{% for fp in report.false_positives %}
+<tr>
+  <td>{{ fp.index }}</td>
+  <td>{{ fp.check }}</td>
+  <td>{{ fp.customer_id }}</td>
+  <td>{{ fp.record_ids }}</td>
+  <td style="text-align:right">{{ "%.2f"|format(fp.impact) }}</td>
+  <td>{{ fp.description }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}
+<p class="text-muted">No false positives.</p>
+{% endif %}
+
+<p style="margin-top:24px"><a href="/api/answer-key" class="btn btn-secondary">View JSON</a></p>
+{% endblock %}
