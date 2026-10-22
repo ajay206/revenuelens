@@ -204,6 +204,7 @@ def test_recall_over_seeds(setup_demo):
             store_planted(conn, tenant_id, seed, gt)
 
         report = compare(planted, findings)
+        print(f"seed={seed} planted={report['planted']} precision={report['precision']} recall={report['recall']}")
         assert report["recall"] == 1.0
         # Ensure per‑check stats exist for all leak types
         for check in LEAK_TYPES:
@@ -244,6 +245,9 @@ def test_answer_key_endpoint(setup_demo):
             "--randomize",
         ]
     )
+    from app.dashboard import reset_cache
+
+    reset_cache()
     with company_conn() as conn:
         tenant_id = os.environ["COMPANY_ID"]
         gt = generate(seed=seed, randomize=True).ground_truth
