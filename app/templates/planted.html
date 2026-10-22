@@ -34,17 +34,17 @@
   <td>{{ issue.leak_id }}</td>
   <td>{{ issue.check_name }}</td>
   <td>{{ issue.cust_no }}</td>
-  <td>{{ issue.bill_prd }}</td>
+  <td>{{ issue.bill_prd or '—' }}</td>
   <td style="text-align:right">{{ "%.2f"|format(issue.impact_inr) }}</td>
   <td>{{ issue.description }}</td>
   <td>
     {% if issue.detected %}
-    <span class="badge" style="background:var(--success);color:white">Matched</span>
+    <span class="badge" style="background:#16a34a;color:#fff">Matched</span>
     {% if issue.finding_index is not none %}
     <a href="/leaks/{{ issue.finding_index }}" class="btn btn-secondary btn-sm" style="margin-top:4px;display:inline-block">View leak</a>
     {% endif %}
     {% else %}
-    <span class="badge" style="background:var(--danger);color:white">Missed</span>
+    <span class="badge" style="background:#dc2626;color:#fff">Missed</span>
     {% endif %}
   </td>
 </tr>

@@ -673,7 +673,7 @@ def generate(seed: int = 42, n_customers: int = 500, randomize: bool = False) ->
                     "tariff_mismatch",
                     "BILL_DTL",
                     [f"{line['INV_NO']}:{line['LN_NO']}"],
-                    line["INV_NO"][-6:],
+                    next((h["BILL_PRD"] for h in tables["BILL_HDR"] if h["INV_NO"] == line["INV_NO"]), None),
                     impact,
                     f"Recurring charge line {line['INV_NO']}:{line['LN_NO']} amount altered from {original} to {new_amt}",
                     cno,
