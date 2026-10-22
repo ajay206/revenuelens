@@ -200,8 +200,8 @@
 
       <form method="post" action="/login" novalidate id="login-form">
         <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email" autocomplete="email" required placeholder="you@example.com" value="{{ email or '' }}">
+          <label for="email">Username or email</label>
+          <input type="text" id="email" name="email" autocomplete="username" required placeholder="you@example.com or username" value="{{ email or '' }}">
         </div>
         <div class="form-group">
           <label for="password">Password</label>
@@ -210,7 +210,8 @@
         <button type="submit" class="btn btn-primary" id="login-btn">Log in</button>
       </form>
 
-      <p class="login-note">Demo data is synthetic.</p>
+      <p class="login-note">New here? <a href="/register">Create account</a></p>
+      <p class="login-note" style="margin-top:8px">Demo data is synthetic.</p>
     </div>
   </div>
 </div>

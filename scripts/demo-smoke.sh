@@ -113,4 +113,14 @@ print("sample fixes:", len(items))
 body=$(curl -s -X POST -d 'email=demo@revenuelens.local' -d 'password=' http://localhost:${DEMO_PORT:-8765}/login)
 grep -q "Enter your email and password" <<<"$body" || { echo "login 422 not friendly"; exit 1; }
 
+# Self-registration: create a viewer account, then log in by username
+U="smoke_$RANDOM"
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -d "username=$U" -d 'password=smoke-pass-1' -d 'confirm_password=smoke-pass-1' http://localhost:${DEMO_PORT:-8765}/register)
+[[ "$code" == "303" ]] || { echo "register returned $code"; exit 1; }
+body=$(curl -s -X POST -d "username=${U^^}" -d 'password=smoke-pass-1' -d 'confirm_password=smoke-pass-1' http://localhost:${DEMO_PORT:-8765}/register)
+grep -q "That username is already taken" <<<"$body" || { echo "duplicate username not rejected"; exit 1; }
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -d "email=$U" -d 'password=smoke-pass-1' http://localhost:${DEMO_PORT:-8765}/login)
+[[ "$code" == "303" ]] || { echo "username login returned $code"; exit 1; }
+echo "registration OK ($U)"
+
 echo "DEMO OK"

@@ -19,6 +19,22 @@ Open your browser to **http://localhost:8765** (change it with `DEMO_PORT=9123`)
 
 These credentials are **synthetic** and only work for the demo environment.
 
+### Create your own account
+
+Welcome to RevenueLens! To start exploring the platform you first need an account.  
+1. Open the login page – you’ll see a **Create account** link right below the sign‑in form.  
+2. Click the link; you’ll be taken to **/register** where you must supply a **username**, a **password**, and **confirm password**.  
+3. Usernames can be 3‑32 characters and may contain letters, digits, dots, underscores, or hyphens. They are unique per company instance and are case‑insensitive.  
+4. Passwords must be at least 8 characters; they are stored securely using bcrypt.  
+5. If the registration feature is disabled (the environment variable `ALLOW_REGISTRATION` is `false`), the page will show a friendly *“Self-registration is turned off for this instance. Ask your admin for an account.”* message.  
+6. The login field now accepts either your **username** or **email**, so you can sign in with whichever you prefer.  
+7. Upon successful registration you will receive the **viewer** role. Viewers can browse findings, stories, reports, documentation, audit logs, and planted issues, but cannot approve or reject fixes.  
+8. Admins and analysts retain their existing privileges; analysts can also approve fixes, but they must be granted manually in the database for now.  
+9. All registration attempts are rate‑limited – a maximum of 10 sign‑ups per IP address within a 10‑minute window. Exceeding this limit returns a clear *“Too many sign-ups from this address. Try again later.”* error.  
+10. Any registration error is presented as a friendly message (e.g., *“That username is already taken”* or *“Password must be at least 8 characters.”*) rather than raw JSON.
+
+In the one-command demo registration is on (`ALLOW_REGISTRATION=true`); per-company stacks default to off.
+
 ### Every run plants different issues
 
 - Each fresh start of the demo (i.e. when the database volume is newly created) generates a **random seed** and plants a random mix of leaks:

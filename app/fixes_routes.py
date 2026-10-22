@@ -70,6 +70,14 @@ def _get_actor(request: Request) -> str:
     return user["email"]
 
 
+def _require_approver(request: Request) -> str:
+    """Return actor email; 403 unless the user may approve/reject fixes."""
+    user = dashboard_user(request)
+    if user.get("role") not in ("admin", "analyst"):
+        raise HTTPException(status_code=403, detail="Your role (viewer) cannot approve or reject fixes.")
+    return user["email"]
+
+
 def _require_auth_html(request: Request) -> str:
     """Get actor for HTML routes, redirect to login if not authenticated."""
     user = dashboard_user(request)
@@ -135,7 +143,7 @@ def fixes_queue(request: Request, status: str | None = None):
 @router.post("/fixes/{fix_id}/approve", response_class=HTMLResponse)
 def approve_fix_html(request: Request, fix_id: UUID, note: str = Form(default="")):
     """Approve a fix draft (HTML form)."""
-    actor = _require_auth_html(request)
+    actor = _require_approver(request)
 
     with company_conn() as conn:
         try:
@@ -149,7 +157,7 @@ def approve_fix_html(request: Request, fix_id: UUID, note: str = Form(default=""
 @router.post("/fixes/{fix_id}/reject", response_class=HTMLResponse)
 def reject_fix_html(request: Request, fix_id: UUID, note: str = Form(default="")):
     """Reject a fix draft (HTML form)."""
-    actor = _require_auth_html(request)
+    actor = _require_approver(request)
 
     with company_conn() as conn:
         try:
@@ -214,7 +222,7 @@ def list_fixes_api(request: Request, status: str | None = None):
 @router.post("/api/fixes/{fix_id}/decision", response_model=DraftResponse)
 def decide_fix_api(request: Request, fix_id: UUID, payload: DecisionRequest):
     """Approve or reject a fix draft via JSON API."""
-    actor = _get_actor(request)
+    actor = _require_approver(request)
 
     with company_conn() as conn:
         try:
