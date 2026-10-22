@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}Create account – RevenueLens{% endblock %}
+
+{% from "_logo.html" import logo_mark %}
+
+{% block head_extra %}
+<style>
+  .login-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  .login-brand {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px 64px;
+    background: linear-gradient(135deg, var(--accent) 0%, #7c3aed 100%);
+    color: #fff;
+    height: 100%;
+  }
+
+  .login-brand .logo {
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .login-brand h2 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 24px;
+  }
+
+  .login-brand ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .login-brand li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 16px;
+    line-height: 1.5;
+    opacity: 0.95;
+  }
+
+  .login-brand svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+  }
+
+  .login-card-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    background: var(--bg);
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .login-card .card-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .login-card .text-muted {
+    margin-bottom: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .form-group input {
+    width: 100%;
+    height: 48px;
+    padding: 0 14px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+
+  .form-group input:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .btn-primary {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    margin-top: 8px;
+  }
+
+  .login-note {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  .alert-error {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: var(--danger-soft);
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    color: var(--danger);
+    font-size: 14px;
+  }
+
+  .login-brand .logo svg { width: 40px; height: 40px; margin-top: 0; }
+
+  .alert-error[hidden] {
+    display: none;
+  }
+
+  #theme-toggle {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+  }
+
+  .login-card-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .login-wrap {
+      grid-template-columns: 1fr;
+    }
+    .login-brand {
+      display: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block shell %}
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<div class="login-wrap" id="main-content">
+  <button class="btn btn-secondary btn-sm" id="theme-toggle" aria-label="Toggle dark mode" type="button">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+  </button>
+
+  <section class="login-brand" aria-hidden="true">
+    <div class="logo" style="display:flex;align-items:center;gap:12px">{{ logo_mark(40) }}<span>RevenueLens</span></div>
+    <h2>Create your viewer account</h2>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Explore revenue findings</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Track fix progress</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Collaborate with your team</li>
+    </ul>
+  </section>
+
+  <div class="login-card-wrap">
+    <div class="card login-card">
+      <div class="login-card-logo">{{ logo_mark(44) }}</div>
+      <h1 class="card-title">Create account</h1>
+      <p class="text-muted">Create a viewer account for {{ company_name or 'this workspace' }}. Viewers can explore findings but cannot approve fixes.</p>
+
+      {% if not enabled %}
+      <div class="alert-error" role="alert">Self-registration is turned off for this instance. Ask your admin for an account.</div>
+      {% else %}
+      <div class="alert-error" role="alert" id="register-error" {% if not error %}hidden{% endif %}>{{ error or '' }}</div>
+
+      <form method="post" action="/register" novalidate id="register-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="username" required
+                 pattern="^[A-Za-z0-9._-]{3,32}$"
+                 placeholder="username"
+                 value="{{ username or '' }}"
+                 title="3–32 characters: letters, digits, . _ -">
+          <p style="font-size:12px;color:var(--text-2);margin-top:4px;">3–32 characters: letters, digits, . _ -</p>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="new-password" required
+                 minlength="8" placeholder="••••••••"
+                 title="At least 8 characters">
+          <p style="font-size:12px;color:var(--text-2);margin-top:4px;">At least 8 characters</p>
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirm password</label>
+          <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required
+                 placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary" id="register-btn">Create account</button>
+      </form>
+      {% endif %}
+
+      <p class="login-note">Already have an account? <a href="/login">Sign in</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function() {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    var root = document.documentElement;
+    var saved = localStorage.getItem('rl-theme');
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var dark = saved ? saved === 'dark' : prefersDark;
+    root.dataset.theme = dark ? 'dark' : 'light';
+    btn.innerHTML = dark
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+    btn.addEventListener('click', function() {
+      var isDark = root.dataset.theme === 'dark';
+      root.dataset.theme = isDark ? 'light' : 'dark';
+      localStorage.setItem('rl-theme', isDark ? 'light' : 'dark');
+      btn.innerHTML = isDark
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    });
+  })();
+
+  (function() {
+    var form = document.getElementById('register-form');
+    var btn = document.getElementById('register-btn');
+    var errorEl = document.getElementById('register-error');
+    var usernameInput = document.getElementById('username');
+    var passwordInput = document.getElementById('password');
+    var confirmInput = document.getElementById('confirm_password');
+    if (!form || !btn || !errorEl) return;
+
+    var originalBtnText = btn.textContent;
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.hidden = false;
+    }
+
+    function hideError() {
+      errorEl.hidden = true;
+      errorEl.textContent = '';
+    }
+
+    function validateUsername(val) {
+      return /^[A-Za-z0-9._-]{3,32}$/.test(val);
+    }
+
+    form.addEventListener('submit', function(e) {
+      var username = usernameInput.value.trim();
+      var password = passwordInput.value;
+      var confirm = confirmInput.value;
+
+      hideError();
+
+      if (!validateUsername(username)) {
+        showError('Username must be 3–32 characters: letters, digits, dot, underscore or hyphen.');
+        usernameInput.focus();
+        e.preventDefault();
+        return;
+      }
+      if (password.length < 8) {
+        showError('Password must be at least 8 characters.');
+        passwordInput.focus();
+        e.preventDefault();
+        return;
+      }
+      if (password !== confirm) {
+        showError('Passwords do not match.');
+        confirmInput.focus();
+        e.preventDefault();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      btn.setAttribute('aria-busy', 'true');
+    });
+  })();
+</script>
+{% endblock %}

@@ -36,9 +36,9 @@ def login(payload: LoginRequest):
             """
             SELECT id, email, password_hash, role
             FROM app_user
-            WHERE tenant_id = %s AND email = %s
+            WHERE tenant_id = %s AND (lower(email) = lower(%s) OR lower(username) = lower(%s))
             """,
-            (settings.company_id, payload.email),
+            (settings.company_id, payload.email.strip(), payload.email.strip()),
         )
         row = cur.fetchone()
         if not row:
@@ -82,7 +82,7 @@ def get_current_user(
     with company_conn() as conn, conn.cursor() as cur:
         cur.execute(
             """
-            SELECT email, role
+            SELECT COALESCE(email, username), role
             FROM app_user
             WHERE id = %s AND tenant_id = %s
             """,

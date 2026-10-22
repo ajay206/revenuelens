@@ -26,6 +26,18 @@ docker compose -f docker-compose.demo.yml up
 
 ---
 
+### Try self‑registration
+
+1. Navigate to **/login** and click the **Create account** link.  
+2. Fill in a unique username (e.g., `demo_user`) and a strong password, then confirm it.  
+3. Submit – you should see a success toast and be logged in as a **viewer**.  
+4. Verify you can view findings, stories, and reports from the sidebar.  
+5. Attempt to approve a fix (`POST /api/fixes/123/decision`); you will receive a **403 Forbidden** response.  
+6. Log out, then log back in using the same username (or the email if you set one) in the login field.  
+7. Try registering the same username again (case‑insensitive); the UI will display *“That username is already taken”*.
+
+This quick demo shows the full self‑registration flow and the viewer‑only permissions.
+
 ## 3. View the leak list (0:45‑1:15)
 
 * Click the **Leaks** navigation item.  
