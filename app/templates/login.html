@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Login – RevenueLens{% endblock %}
 
+{% from "_logo.html" import logo_mark %}
+
 {% block head_extra %}
 <style>
   .login-wrap {
@@ -25,6 +27,9 @@
     font-size: 28px;
     letter-spacing: -0.5px;
     margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   .login-brand h2 {
@@ -137,11 +142,21 @@
     font-size: 14px;
   }
 
+  .alert-error[hidden] {
+    display: none;
+  }
+
   #theme-toggle {
     position: absolute;
     top: 24px;
     right: 24px;
     z-index: 10;
+  }
+
+  .login-card-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
   }
 
   @media (max-width: 900px) {
@@ -164,7 +179,7 @@
   </button>
 
   <section class="login-brand" aria-hidden="true">
-    <div class="logo">RevenueLens</div>
+    <div class="logo" style="display:flex;align-items:center;gap:12px">{{ logo_mark(40) }}<span>RevenueLens</span></div>
     <h2>Find the money your billing system is missing</h2>
     <ul>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Detect revenue leaks automatically</li>
@@ -175,23 +190,22 @@
 
   <div class="login-card-wrap">
     <div class="card login-card">
+      <div class="login-card-logo">{{ logo_mark(44) }}</div>
       <h1 class="card-title">Sign in</h1>
       <p class="text-muted">Enter your credentials to access RevenueLens</p>
 
-      {% if error %}
-      <div class="alert-error" role="alert">{{ error }}</div>
-      {% endif %}
+      <div class="alert-error" role="alert" id="login-error" {% if not error %}hidden{% endif %}>{{ error or '' }}</div>
 
-      <form method="post" action="/login" novalidate>
+      <form method="post" action="/login" novalidate id="login-form">
         <div class="form-group">
           <label for="email">Email</label>
-          <input type="email" id="email" name="email" autocomplete="email" required placeholder="you@example.com">
+          <input type="email" id="email" name="email" autocomplete="email" required placeholder="you@example.com" value="{{ email or '' }}">
         </div>
         <div class="form-group">
           <label for="password">Password</label>
           <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="••••••••">
         </div>
-        <button type="submit" class="btn btn-primary">Log in</button>
+        <button type="submit" class="btn btn-primary" id="login-btn">Log in</button>
       </form>
 
       <p class="login-note">Demo data is synthetic.</p>
@@ -220,6 +234,73 @@
       btn.innerHTML = isDark
         ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
         : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    });
+  })();
+
+  (function() {
+    var form = document.getElementById('login-form');
+    var btn = document.getElementById('login-btn');
+    var errorEl = document.getElementById('login-error');
+    var emailInput = document.getElementById('email');
+    var passwordInput = document.getElementById('password');
+    if (!form || !btn || !errorEl) return;
+
+    var originalBtnText = btn.textContent;
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var email = emailInput.value.trim();
+      var password = passwordInput.value;
+
+      if (!email || !password) {
+        errorEl.textContent = 'Enter your email and password.';
+        errorEl.hidden = false;
+        if (!email) emailInput.focus(); else passwordInput.focus();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+      btn.setAttribute('aria-busy', 'true');
+      errorEl.hidden = true;
+      errorEl.textContent = '';
+
+      fetch('/login', {
+        method: 'POST',
+        body: new URLSearchParams(new FormData(form)),
+        headers: { 'Accept': 'text/html' },
+        redirect: 'follow',
+        credentials: 'same-origin'
+      }).then(function(response) {
+        if (response.redirected || (response.ok && !response.url.endsWith('/login'))) {
+          window.location = response.url;
+          return;
+        }
+        var status = response.status;
+        var msg;
+        if (status === 401) {
+          msg = 'Wrong email or password.';
+        } else if (status === 422) {
+          msg = 'Enter your email and password.';
+        } else if (status === 429) {
+          msg = 'Too many attempts. Try again in a minute.';
+        } else if (status >= 500) {
+          msg = 'Something went wrong on our side. Please try again.';
+        } else {
+          msg = 'Sign-in failed (HTTP ' + status + '). Please try again.';
+        }
+        errorEl.textContent = msg;
+        errorEl.hidden = false;
+        emailInput.focus();
+      }).catch(function() {
+        errorEl.textContent = "Can't reach RevenueLens. Check that the server is running and try again.";
+        errorEl.hidden = false;
+      }).finally(function() {
+        btn.disabled = false;
+        btn.textContent = originalBtnText;
+        btn.setAttribute('aria-busy', 'false');
+      });
     });
   })();
 </script>

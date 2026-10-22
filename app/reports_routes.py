@@ -68,10 +68,23 @@ def load_kb() -> KnowledgeBase:
 # --------------------------------------------------------------------------- #
 
 
+def _log_report(user: dict, name: str, fmt: str, count: int) -> None:
+    try:
+        from app.db import company_conn
+        from app.fixes import log
+
+        with company_conn() as conn:
+            log(conn, str(get_settings().company_id), user.get("email", "unknown"), "report_generated", name,
+                {"format": fmt, "findings": count})
+    except Exception:  # noqa: BLE001, S110
+        pass
+
+
 @router.get("/api/reports/findings.csv")
 def findings_csv(request: Request):
-    dashboard_user(request)
+    user = dashboard_user(request)
     findings = load_findings()
+    _log_report(user, "findings.csv", "csv", len(findings))
     from app.reports import findings_to_csv
 
     csv_content = findings_to_csv(findings)
@@ -84,8 +97,9 @@ def findings_csv(request: Request):
 
 @router.get("/api/reports/findings.pdf")
 def findings_pdf(request: Request):
-    dashboard_user(request)
+    user = dashboard_user(request)
     findings = load_findings()
+    _log_report(user, "findings.pdf", "pdf", len(findings))
     totals = compute_totals(findings)
     settings = get_settings()
     from app.reports import findings_to_pdf
@@ -175,7 +189,18 @@ def export_doc(
 def reports_page(request: Request):
     user = dashboard_user(request)
     settings = get_settings()
-    return render_template("reports.html", request=request, user=user, company_name=settings.company_name)
+    recent_reports: list = []
+    try:
+        from app.db import company_conn
+        from app.fixes import list_audit
+
+        with company_conn() as conn:
+            recent_reports = [e for e in list_audit(conn, 500) if e["action"] == "report_generated"][:10]
+    except Exception:  # noqa: BLE001
+        recent_reports = []
+    return render_template(
+        "reports.html", request=request, user=user, company_name=settings.company_name, recent_reports=recent_reports
+    )
 
 
 @router.get("/docs", response_class=HTMLResponse)

@@ -25,7 +25,7 @@ MAX_WAIT=300
 INTERVAL=5
 elapsed=0
 while true; do
-  if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health | grep -q "^200$"; then
+  if curl -s -o /dev/null -w "%{http_code}" http://localhost:${DEMO_PORT:-8765}/health | grep -q "^200$"; then
     echo "Health check passed."
     break
   fi
@@ -41,7 +41,7 @@ done
 COOKIE_JAR=$(mktemp)
 code=$(curl -s -o /dev/null -w '%{http_code}' -c "$COOKIE_JAR" -X POST \
   -d 'email=demo@revenuelens.local' -d 'password=revenuelens-demo' \
-  http://localhost:8000/login)
+  http://localhost:${DEMO_PORT:-8765}/login)
 if [[ "$code" != "303" ]]; then
   echo "Login request returned $code, expected 303."
   exit 1
@@ -53,25 +53,25 @@ if ! grep -q rl_token "$COOKIE_JAR"; then
 fi
 
 # Home page contains expected text
-HOME_CONTENT=$(curl -s -b "$COOKIE_JAR" http://localhost:8000/)
+HOME_CONTENT=$(curl -s -b "$COOKIE_JAR" http://localhost:${DEMO_PORT:-8765}/)
 grep -q "leaking this month" <<<"$HOME_CONTENT" || {
   echo "Home page does not contain expected leak phrase."
   exit 1
 }
 
 # /reports endpoint must return 200 and contain "CSV"
-REPORT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -b "$COOKIE_JAR" http://localhost:8000/reports)
+REPORT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -b "$COOKIE_JAR" http://localhost:${DEMO_PORT:-8765}/reports)
 if [[ "$REPORT_STATUS" != "200" ]]; then
   echo "/reports returned $REPORT_STATUS, expected 200."
   exit 1
 fi
-grep -q "CSV" <<<"$(curl -s -b "$COOKIE_JAR" http://localhost:8000/reports)" || {
+grep -q "CSV" <<<"$(curl -s -b "$COOKIE_JAR" http://localhost:${DEMO_PORT:-8765}/reports)" || {
   echo "/reports endpoint does not contain expected CSV text."
   exit 1
 }
 
 # /docs endpoint with query must return 200 and contain "NMB_MAX_699"
-DOCS_URL="http://localhost:8000/docs?request=document+plan+NMB_MAX_699&level=analyst"
+DOCS_URL="http://localhost:${DEMO_PORT:-8765}/docs?request=document+plan+NMB_MAX_699&level=analyst"
 DOCS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -b "$COOKIE_JAR" "$DOCS_URL")
 if [[ "$DOCS_STATUS" != "200" ]]; then
   echo "/docs returned $DOCS_STATUS, expected 200."
@@ -83,11 +83,34 @@ grep -q "NMB_MAX_699" <<<"$(curl -s -b "$COOKIE_JAR" "$DOCS_URL")" || {
 }
 
 # Summary check
-curl -s -b "$COOKIE_JAR" http://localhost:8000/api/summary | python3 -c '
+curl -s -b "$COOKIE_JAR" http://localhost:${DEMO_PORT:-8765}/api/summary | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 assert d.get("count", 0) > 0, f"count not >0: {d.get("count")}"
 print("findings:", d["count"])
 '
+
+# Answer key: planted issues must all be detected
+curl -s -b "$COOKIE_JAR" http://localhost:${DEMO_PORT:-8765}/api/answer-key | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+print("seed:", d["seed"], "planted:", d["planted"], "detected:", d["detected"], "precision:", d["precision"], "recall:", d["recall"])
+assert d["planted"] > 0, "no planted issues"
+assert d["recall"] == 1.0, d["per_check"]
+'
+for page in fixes audit planted; do
+  st=$(curl -s -o /dev/null -w "%{http_code}" -b "$COOKIE_JAR" http://localhost:${DEMO_PORT:-8765}/$page)
+  [[ "$st" == "200" ]] || { echo "/$page returned $st"; exit 1; }
+done
+curl -s -b "$COOKIE_JAR" http://localhost:${DEMO_PORT:-8765}/api/fixes | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+items = d.get("fixes", d) if isinstance(d, dict) else d
+assert len(items) > 0, "no sample fixes"
+print("sample fixes:", len(items))
+'
+# Empty password must give a friendly 422 page, not raw JSON
+body=$(curl -s -X POST -d 'email=demo@revenuelens.local' -d 'password=' http://localhost:${DEMO_PORT:-8765}/login)
+grep -q "Enter your email and password" <<<"$body" || { echo "login 422 not friendly"; exit 1; }
 
 echo "DEMO OK"

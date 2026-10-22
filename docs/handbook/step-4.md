@@ -11,23 +11,23 @@ The engine performs **8 leak checks**. Each check looks for a specific type of e
 
 The checks are:
 
-| # | Leak check | What it finds |
-|---|------------|---------------|
-| 1 | **Unrated usage** | Usage that exists but has no rating applied. |
-| 2 | **Rated but not invoiced** | Rated usage that never appears on an invoice. |
-| 3 | **Tariff on invoice differs from contract** | The tariff used on an invoice does not match the contract tariff. |
-| 4 | **Expired discount still applied** | A discount that should have ended is still being used. |
-| 5 | **Service active but not billed** | A service that is still active but has no invoice. |
-| 6 | **Missed renewal** | A contract that should have renewed is missing a renewal invoice. |
-| 7 | **Payment not matched to an invoice** | A payment that cannot be linked to any invoice. |
-| 8 | **Duplicate charge** | The same charge appears on two different invoices. |
+| # | Check id | Leak check | What it finds |
+|---|----------|------------|---------------|
+| 1 | `unrated_usage` | **Unrated usage** | Usage that exists but has no rating applied. |
+| 2 | `rated_not_invoiced` | **Rated but not invoiced** | Rated usage that never appears on an invoice. |
+| 3 | `tariff_mismatch` | **Tariff mismatch** | The tariff used on an invoice does not match the contract tariff. |
+| 4 | `expired_discount` | **Expired discount still applied** | A discount that should have ended is still being used. |
+| 5 | `provisioned_not_billed` | **Provisioned but not billed** | A service that is still active but has no invoice. |
+| 6 | `missed_renewal` | **Missed renewal** | A contract that should have renewed is missing a renewal invoice. |
+| 7 | `unmatched_payment` | **Unmatched payment** | A payment that cannot be linked to any invoice. |
+| 8 | `duplicate_charge` | **Duplicate charge** | The same charge appears on two different invoices. |
 
-For each finding the engine writes a line like:
+For each finding the engine writes a JSON line like:
 
-```
+```json
 {
   "check": "unrated_usage",
-  "record_id": "U12345",
+  "record_ids": ["U12345"],
   "customer": "Acme Corp",
   "period": "2024-03",
   "money_impact": 120.50,
@@ -93,3 +93,6 @@ Two items in the answer key (`config_conflict`) are **out of scope** for these e
 4. If you need to debug a finding, open the record IDs in your database and read the `evidence` field.
 
 That’s all for Step 4. The next step will show how to feed the cleaned model into downstream billing reports.  
+
+
+> **Demo note:** the one-command demo now plants a random subset of these checks with random counts on each fresh start (see [demo-randomized.md](demo-randomized.md)). The numbers above are for the fixed test data set (seed 42, 8 of each), which tests and `app.evaluate` still use.

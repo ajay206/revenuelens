@@ -95,7 +95,7 @@ class Dataset:
 # Generator implementation
 # --------------------------------------------------------------------------- #
 
-def generate(seed: int = 42, n_customers: int = 500) -> Dataset:
+def generate(seed: int = 42, n_customers: int = 500, randomize: bool = False) -> Dataset:
     """Generate a deterministic synthetic legacy data set.
 
     Parameters
@@ -593,10 +593,15 @@ def generate(seed: int = 42, n_customers: int = 500) -> Dataset:
         "duplicate_charge",
     ]
 
+    counts = random_leak_counts(seed) if randomize else {t: 8 for t in leak_types}
+    cust_order = sorted(cust_to_subs.keys())
+    if randomize:
+        random.Random(seed * 7919 + 1).shuffle(cust_order)
+
     for leak_type in leak_types:
         planted = 0
-        for cno in sorted(cust_to_subs.keys()):
-            if planted >= 8:
+        for cno in cust_order:
+            if planted >= counts[leak_type]:
                 break
             if cno in used_cust_no:
                 continue
@@ -767,7 +772,7 @@ def generate(seed: int = 42, n_customers: int = 500) -> Dataset:
     # Pick auto-renew contracts ending in 2026-07 or 2026-08 whose customer is unused
     missed_renewal_planted = 0
     for ct in tables["CONTRACT_TERMS"]:
-        if missed_renewal_planted >= 8:
+        if missed_renewal_planted >= counts["missed_renewal"]:
             break
         cno = ct["CUST_NO"]
         if cno in used_cust_no:
@@ -827,8 +832,8 @@ def generate(seed: int = 42, n_customers: int = 500) -> Dataset:
     # Discount codes that expire before 2026-08-01 and 2026-09-01
     expired_disc_codes = [d["DISC_CD"] for d in tables["DISC_CFG"]
                           if d["VALID_TO"] < _date(2026, 8, 1)]  # DISC5 (2026-06-30) and DISC10 (2026-07-31)
-    for cno in sorted(cust_to_subs.keys()):
-        if expired_discount_planted >= 8:
+    for cno in cust_order:
+        if expired_discount_planted >= counts["expired_discount"]:
             break
         if cno in used_cust_no:
             continue
@@ -1045,6 +1050,19 @@ def generate(seed: int = 42, n_customers: int = 500) -> Dataset:
         tickets=tickets,
         pages=pages,
     )
+
+
+LEAK_TYPES = (
+    "unrated_usage", "rated_not_invoiced", "tariff_mismatch", "expired_discount",
+    "provisioned_not_billed", "missed_renewal", "unmatched_payment", "duplicate_charge",
+)
+
+
+def random_leak_counts(seed: int) -> dict[str, int]:
+    """Pick which leak types to plant and how many (randomised demo mode)."""
+    r = random.Random(f"counts-{seed}")
+    chosen = set(r.sample(LEAK_TYPES, r.randint(4, len(LEAK_TYPES))))
+    return {t: (r.randint(1, 8) if t in chosen else 0) for t in LEAK_TYPES}
 
 
 def to_ground_truth_json(ds: Dataset) -> str:

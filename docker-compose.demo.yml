@@ -1,7 +1,7 @@
 # Run the demo with:
 #   docker compose -f docker-compose.demo.yml up
-version: "3.9"
-
+# Then open http://localhost:8765 (override with DEMO_PORT=9123).
+# Fresh random leaks each new run; reproduce with DEMO_SEED=<seed>. Reset with `down -v`.
 services:
   db:
     image: postgres:16
@@ -33,8 +33,10 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      DEMO_SEED: ${DEMO_SEED:-}
+      DEMO_PORT: ${DEMO_PORT:-8765}
     ports:
-      - "127.0.0.1:${DEMO_PORT:-8000}:8000"
+      - "127.0.0.1:${DEMO_PORT:-8765}:8000"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request, sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health').status == 200 else sys.exit(1)"]
       interval: 5s
