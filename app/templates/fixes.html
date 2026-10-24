@@ -58,7 +58,9 @@
               </td>
               <td>{{ fix.created_at|string|truncate(16, True, '') if fix.created_at else '—' }}</td>
               <td>
-                {% if fix.status == 'draft' %}
+                {% if fix.status == 'draft' and user and user.role == 'viewer' %}
+                  <span class="text-muted">Waiting for an admin or analyst to decide</span>
+                {% elif fix.status == 'draft' %}
                   <form method="post" action="/fixes/{{ fix.id }}/approve" class="form-inline" style="display:inline-flex; gap:8px; align-items:center;" onsubmit="return confirm('Approve this fix?');">
                     <label for="approve-note-{{ fix.id }}" class="visually-hidden">Approval note</label>
                     <input type="text" name="note" id="approve-note-{{ fix.id }}" placeholder="Optional note" aria-label="Approval note" style="width:160px;">

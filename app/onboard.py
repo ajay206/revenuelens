@@ -71,8 +71,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     from app.llm import free_llm_from_env
+    from app.llm_cache import CachedLLM
 
-    llm = free_llm_from_env()
+    llm = CachedLLM(free_llm_from_env())
     result = onboard(args.dsn, args.schema, llm)
 
     if args.out:

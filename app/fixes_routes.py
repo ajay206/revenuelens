@@ -102,7 +102,7 @@ def _inr(value: float | str | None) -> str:
 @router.post("/leaks/{leak_id:int}/draft", response_class=HTMLResponse)
 def create_draft_html(request: Request, leak_id: int):
     """Create a fix draft from a leak (HTML form submission)."""
-    actor = _require_auth_html(request)
+    actor = _require_approver(request)
     findings = load_findings()
     stories = load_stories()
 
@@ -122,7 +122,7 @@ def create_draft_html(request: Request, leak_id: int):
 @router.get("/fixes", response_class=HTMLResponse)
 def fixes_queue(request: Request, status: str | None = None):
     """HTML page showing the approval queue with tabs by status."""
-    actor = _require_auth_html(request)
+    _require_auth_html(request)
     settings = get_settings()
 
     with company_conn() as conn:
@@ -131,7 +131,7 @@ def fixes_queue(request: Request, status: str | None = None):
     return render_template(
         "fixes.html",
         request=request,
-        user={"email": actor},
+        user=dashboard_user(request),
         fixes=fixes,
         current_status=status,
         statuses=["draft", "approved", "rejected"],
@@ -171,7 +171,7 @@ def reject_fix_html(request: Request, fix_id: UUID, note: str = Form(default="")
 @router.get("/audit", response_class=HTMLResponse)
 def audit_log_html(request: Request):
     """HTML page showing audit log."""
-    actor = _require_auth_html(request)
+    _require_auth_html(request)
     settings = get_settings()
 
     with company_conn() as conn:
@@ -180,7 +180,7 @@ def audit_log_html(request: Request):
     return render_template(
         "audit.html",
         request=request,
-        user={"email": actor},
+        user=dashboard_user(request),
         entries=entries,
         company_name=settings.company_name,
     )
@@ -191,7 +191,7 @@ def audit_log_html(request: Request):
 @router.post("/api/fixes", status_code=201, response_model=DraftResponse)
 def create_draft_api(request: Request, payload: DraftRequest):
     """Create a fix draft via JSON API."""
-    actor = _get_actor(request)
+    actor = _require_approver(request)
     findings = load_findings()
     stories = load_stories()
 

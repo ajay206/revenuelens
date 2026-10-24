@@ -547,6 +547,7 @@
             top: 16px;
         }
         .kpi-value.money { font-size: 2.375rem; font-weight: 700; }
+{% include "_qa.css" %}
     </style>
 
     {% block head_extra %}{% endblock %}
@@ -609,8 +610,7 @@
                         <span class="chevron">▾</span>
                     </button>
                     <div class="dropdown" role="menu">
-                        <a href="/profile" role="menuitem">Profile</a>
-                        <a href="/settings" role="menuitem">Settings</a>
+                        <div role="none" style="padding:8px 12px;font-size:13px;color:var(--text-2)">Signed in as <strong>{{ user.email }}</strong>{% if user.role %}<br>Role: {{ user.role }}{% endif %}</div>
                         <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
                         <a href="/logout" role="menuitem">Log out</a>
                     </div>
@@ -706,6 +706,7 @@
                 const searchInput = document.createElement('input');
                 searchInput.type = 'search';
                 searchInput.setAttribute('aria-label', 'Search table');
+                searchInput.placeholder = 'Search…';
                 toolbar.appendChild(searchInput);
 
                 // Optional column filter
@@ -719,6 +720,7 @@
                         if (cell) values.add(cell.textContent.trim());
                     });
                     filterSelect = document.createElement('select');
+                    filterSelect.setAttribute('aria-label', 'Filter table');
                     filterSelect.innerHTML = '<option value="">All</option>';
                     [...values].sort().forEach(v => {
                         const opt = document.createElement('option');
@@ -789,12 +791,14 @@
 
                     const prev = document.createElement('button');
                     prev.textContent = 'Prev';
+                    prev.className = 'btn btn-secondary btn-sm';
                     prev.disabled = currentPage === 1;
                     prev.addEventListener('click', () => { currentPage--; render(); });
                     pagination.appendChild(prev);
 
                     const next = document.createElement('button');
                     next.textContent = 'Next';
+                    next.className = 'btn btn-secondary btn-sm';
                     next.disabled = currentPage === totalPages;
                     next.addEventListener('click', () => { currentPage++; render(); });
                     pagination.appendChild(next);

@@ -819,7 +819,7 @@ def generate(seed: int = 42, n_customers: int = 500, randomize: bool = False) ->
             "missed_renewal",
             "CONTRACT_TERMS",
             [str(ct["CNTR_ID"])],
-            None,
+            end_prd,
             impact.quantize(_DEC_Q),
             f"Contract {ct['CNTR_ID']} should have auto‑renewed but renewal failed; lost {impact.quantize(_DEC_Q)}",
             cno,
