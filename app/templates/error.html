@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ status_code }} – RevenueLens{% endblock %}
+{% block breadcrumbs %}
+<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Home</a></nav>
+{% endblock %}
+{% block page_title %}{% endblock %}
+{% block page_subtitle %}{% endblock %}
+{% block content %}
+<div class="error-page card">
+  <div class="code">{{ status_code }}</div>
+  <h1>{{ heading }}</h1>
+  <p>{{ message }}</p>
+  <a class="btn btn-primary" href="/">Back to dashboard</a>
+  {% if not user %}
+  <a class="btn btn-secondary" href="/login">Sign in</a>
+  {% endif %}
+</div>
+{% endblock %}

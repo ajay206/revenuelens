@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import random
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -47,8 +48,10 @@ def _determine_seed(conn) -> int:
         return existing
 
     env_seed = os.getenv("DEMO_SEED")
-    if env_seed and env_seed.isdigit():
-        return int(env_seed)
+    if env_seed and env_seed.strip().isdigit():
+        return int(env_seed.strip())
+    if env_seed and env_seed.strip():
+        print(f"WARNING: DEMO_SEED={env_seed!r} is not a whole number; using a random seed instead.", file=sys.stderr)
 
     return random.SystemRandom().randint(1, 999_999)
 

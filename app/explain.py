@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from app.adapters.postgres_readonly import ReadOnlyAdapter
+from app.currency import currency_from_env, fix_currency, format_money
 from app.discovery import discover
 from app.llm import LLM, free_llm_from_env, parse_json
 from app.mapping import map_schema
@@ -94,6 +95,15 @@ _SYSTEM_PROMPT = (
 )
 
 
+def _system_prompt() -> str:
+    code, symbol = currency_from_env()
+    return (
+        _SYSTEM_PROMPT
+        + f" All money is in {code}; write amounts with the {symbol} symbol (e.g. {symbol}1,234.50)."
+        + " Use only the amounts given in the data; never invent or convert figures."
+    )
+
+
 def _build_user_prompt(finding: Finding, ticket_matches: Sequence[Mapping[str, Any]]) -> str:
     """Create the user part of the prompt with all deterministic data."""
     base = {
@@ -129,14 +139,18 @@ def explain_finding(finding: Finding, tickets: Sequence[Mapping[str, Any]], llm:
 
     # 3️⃣ Ask the LLM for the narrative fields
     user_prompt = _build_user_prompt(finding, matched)
-    raw_response = llm.complete(_SYSTEM_PROMPT, user_prompt)
+    try:
+        raw_response = llm.complete(_system_prompt(), user_prompt)
+    except Exception:  # noqa: BLE001
+        raw_response = ""
     parsed = parse_json(raw_response)
 
     # 4️⃣ Extract fields with fall‑backs
     def _field(name: str, fallback: str) -> str:
         val = parsed.get(name)
         if isinstance(val, str) and val.strip():
-            return val.strip()
+            code, symbol = currency_from_env()
+            return fix_currency(val.strip(), code, symbol)
         # deterministic fallback based on finding attributes
         templates = {
             "title": f"{finding.check.replace('_', ' ').title()} detected",
@@ -204,7 +218,7 @@ def to_markdown(stories: Sequence[Story]) -> str:
         lines.append("")
         lines.append(f"**Check**: {s.check}")
         lines.append(f"**Customer**: {s.customer_id or 'N/A'}")
-        lines.append(f"**Impact (INR)**: {s.money_impact}")
+        lines.append(f"**Impact**: {format_money(s.money_impact, currency_from_env()[1])}")
         lines.append(f"**Since**: {s.since_when}")
         lines.append("")
         lines.append(f"**What**: {s.what}")

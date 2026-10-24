@@ -110,6 +110,8 @@ DEMO_PORT=9123 docker compose -f docker-compose.demo.yml up
 
 * Provide `GROQ_API_KEY`, `OPENROUTER_API_KEY`, or `GEMINI_API_KEY` as environment variables to get real AI‑generated leak stories.
 * If none are set, a **fake** LLM implementation is used (still shows the UI flow).
+* Providers are tried in order (Groq → OpenRouter free models → Gemini), each retried with backoff on 429/5xx/timeouts; if all fail the built-in fallback story is used, so the demo always starts. Stories are cached per company in the database.
+* Amounts use the company currency (`RL_CURRENCY`, default `INR` → ₹); money figures always come from code, never from the model. See `docs/handbook/qa-pass.md`.
 
 #### What to click
 

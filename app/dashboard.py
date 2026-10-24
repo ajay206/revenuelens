@@ -86,7 +86,9 @@ def load_stories() -> list[Story]:
         from legacy_sim.generator import generate
 
         tickets = generate(seed=42, n_customers=500).tickets
-        llm = free_llm_from_env()
+        from app.llm_cache import CachedLLM
+
+        llm = CachedLLM(free_llm_from_env())
         findings = load_findings()
         _cache["stories"] = list(explain_all(findings, tickets, llm))
     return _cache["stories"]
